@@ -1,0 +1,21 @@
+# Gitignore for Streaming SDK
+# Build results
+build/*
+out/*
+bin/*
+
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.log
+
+# Android Studio generated files
+*.idea
+
+# Visual Studio cache/options directory
+.vs/
+.vscode/

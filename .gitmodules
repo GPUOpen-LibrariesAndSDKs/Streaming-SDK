@@ -1,0 +1,7 @@
+[submodule "mbedtls"]
+	path = mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git
+[submodule "amf"]
+	path = amf
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git
+	ignore = untracked
