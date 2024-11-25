@@ -16,5 +16,5 @@ Streaming SDK depends on a number of other components from AMD and third parties
 Streaming SDK is distributed in open source under the [MIT license](LICENSE.md)
 
 ## Documentation:
-Comprehensive documentation is provided by the [Streaming SDK Wiki](wiki/)
+Comprehensive documentation is provided by the [Streaming SDK Wiki](https://github.com/GPUOpen-LibrariesAndSDKs/Streaming-SDK/wiki)
 
