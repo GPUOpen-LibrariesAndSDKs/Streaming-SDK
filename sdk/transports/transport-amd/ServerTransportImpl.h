@@ -70,28 +70,28 @@ namespace ssdk::transport_amd
             inline const amf::AMFContextPtr GetContext() { return m_pContext; };
             void SetContext(amf::AMFContextPtr pContext) { m_pContext = pContext; };
 
-            inline const bool GetNetwork() { return m_bNetwork; };
+            inline bool GetNetwork() const { return m_bNetwork; };
             void SetNetwork(bool bNetwork) { m_bNetwork = bNetwork; };
 
-            inline const ServerTransport::NETWORK_TYPE GetNetworkType() { return m_NetworkType; };
+            inline ServerTransport::NETWORK_TYPE GetNetworkType() const { return m_NetworkType; };
             void SetNetworkType(ServerTransport::NETWORK_TYPE networkType) { m_NetworkType = networkType; };
 
-            inline const int64_t GetPort() { return m_Port; };
+            inline int64_t GetPort() const { return m_Port; };
             void SetPort(int64_t port) { m_Port = port; };
 
-            inline const int64_t GetDatagramSize() { return m_DatagramSize; };
+            inline int64_t GetDatagramSize() const { return m_DatagramSize; };
             void SetDatagramSize(int64_t datagramSize) { m_DatagramSize = datagramSize; };
 
-            inline const std::string GetBindInterface() { return m_BindInterface; };
+            inline const std::string& GetBindInterface() const { return m_BindInterface; };
             void SetBindInterface(const std::string& bindInterface) { m_BindInterface = bindInterface; };
 
-            inline const std::string GetHostName() { return m_HostName; };
+            inline const std::string& GetHostName() const { return m_HostName; };
             void SetHostName(const std::string& hostName) { m_HostName = hostName; };
 
-            inline const int64_t GetAppInitTime() { return m_AppInitTime; };
+            inline int64_t GetAppInitTime() const { return m_AppInitTime; };
             void SetAppInitTime(int64_t initTime) { m_AppInitTime = initTime; };
 
-            inline const std::string GetPassphrase() const noexcept { return m_cipherPassphrase; }
+            inline const std::string& GetPassphrase() const noexcept { return m_cipherPassphrase; }
             inline void SetPassphrase(const std::string& cipherPassphrase) noexcept { m_cipherPassphrase = cipherPassphrase; }
 
         protected:

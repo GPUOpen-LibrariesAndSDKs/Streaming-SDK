@@ -1,80 +1,80 @@
-cmake_minimum_required(VERSION 3.15)
+# cmake_minimum_required(VERSION 3.15)
 
 # Define the project name
-project(transport-amd)
+# project(transport-amd)
 
 # Define source files
 set(SOURCE_FILES
     ${SOURCE_FILES}
-    ${SUBFOLDER_TRANSPORT_AMD}/ClientImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/ClientSessionImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/ClientTransportImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/Codec.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/DgramClientSessionFlowCtrl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/DgramFlowCtrlProtocol.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/DiscoverySessionImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/audio/AudioData.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/audio/AudioInit.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/Message.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/sensors/DeviceEvent.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/sensors/TrackableDeviceCaps.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/Connect.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/GenericMessage.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/StartStop.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/Stats.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/Update.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/Cursor.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/QoS.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/VideoData.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/VideoInit.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/Misc.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/ServerDiscovery.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/ServerSessionImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/StreamFlowCtrlProtocol.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/TCPServerImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/TCPServerSessionImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/TransportServerImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/UDPServerImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/UDPServerSessionImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/ServerTransportImpl.cpp
-    ${SUBFOLDER_TRANSPORT_AMD}/Subscriber.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientSessionImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientTransportImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Codec.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/DgramClientSessionFlowCtrl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/DgramFlowCtrlProtocol.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/DiscoverySessionImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/audio/AudioData.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/audio/AudioInit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/Message.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/sensors/DeviceEvent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/sensors/TrackableDeviceCaps.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/Connect.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/GenericMessage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/StartStop.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/Stats.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/Update.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/Cursor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/QoS.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/VideoData.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/VideoInit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Misc.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerDiscovery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerSessionImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/StreamFlowCtrlProtocol.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TCPServerImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TCPServerSessionImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TransportServerImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/UDPServerImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/UDPServerSessionImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerTransportImpl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Subscriber.cpp
     PARENT_SCOPE
 )
 
 # Define header files
 set(HEADER_FILES
     ${HEADER_FILES}
-    ${SUBFOLDER_TRANSPORT_AMD}/ClientImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/ClientSessionImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/ClientTransportImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/DgramClientSessionFlowCtrl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/DiscoverySessionImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/ServerDiscovery.h
-    ${SUBFOLDER_TRANSPORT_AMD}/ServerSessionImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/TCPServerSessionImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/TransportClient.h
-    ${SUBFOLDER_TRANSPORT_AMD}/TransportServer.h
-    ${SUBFOLDER_TRANSPORT_AMD}/Channels.h
-    ${SUBFOLDER_TRANSPORT_AMD}/Codec.h
-    ${SUBFOLDER_TRANSPORT_AMD}/FlowCtrlProtocol.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/audio/AudioData.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/audio/AudioInit.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/Message.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/sensors/DeviceEvent.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/sensors/TrackableDeviceCaps.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/Connect.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/GenericMessage.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/StartStop.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/Stats.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/service/Update.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/Cursor.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/QoS.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/VideoData.h
-    ${SUBFOLDER_TRANSPORT_AMD}/messages/video/VideoInit.h
-    ${SUBFOLDER_TRANSPORT_AMD}/TransportServerImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/TransportSession.h
-    ${SUBFOLDER_TRANSPORT_AMD}/UDPServerSessionImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/ServerTransportImpl.h
-    ${SUBFOLDER_TRANSPORT_AMD}/Subscriber.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientSessionImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientTransportImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/DgramClientSessionFlowCtrl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/DiscoverySessionImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerDiscovery.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerSessionImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/TCPServerSessionImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/TransportClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/TransportServer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Channels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Codec.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/FlowCtrlProtocol.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/audio/AudioData.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/audio/AudioInit.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/Message.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/sensors/DeviceEvent.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/sensors/TrackableDeviceCaps.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/Connect.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/GenericMessage.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/StartStop.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/Stats.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/service/Update.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/Cursor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/QoS.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/VideoData.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/messages/video/VideoInit.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/TransportServerImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/TransportSession.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/UDPServerSessionImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerTransportImpl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Subscriber.h
     PARENT_SCOPE
 )

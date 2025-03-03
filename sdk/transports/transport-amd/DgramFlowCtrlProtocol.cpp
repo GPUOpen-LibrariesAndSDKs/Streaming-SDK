@@ -711,10 +711,10 @@ namespace ssdk::transport_amd
         MessageChunks missingChunks;
         if (missingChunks.Unpack(chunksData))
         {
-            for (const std::pair<uint8_t, MessageChunks::MessageChunksMap>& chunksMap : missingChunks.messageChunks)
+            for (const auto& chunksMap : missingChunks.messageChunks)
             {
                 uint8_t channelID = chunksMap.first;
-                for (const std::pair<MessageID, Buffer::BufferChunks>& messageChunksMap : chunksMap.second)
+                for (const auto& messageChunksMap : chunksMap.second)
                 {
                     MessageID messageID = messageChunksMap.first;
                     for (const Buffer::BufferChunk& chunk : messageChunksMap.second)
@@ -983,7 +983,7 @@ namespace ssdk::transport_amd
         memcpy(buffer, &channels, sizeof(channels));
         buffer += sizeof(channels);
 
-        for (const std::pair<uint8_t, MessageChunks::MessageChunksMap>& chunksMap : messageChunks)
+        for (const auto& chunksMap : messageChunks)
         {
             // Next Channel ID
             uint8_t channelID = chunksMap.first;
@@ -995,7 +995,7 @@ namespace ssdk::transport_amd
             memcpy(buffer, &messages, sizeof(messages));
             buffer += sizeof(messages);
 
-            for (const std::pair<MessageID, Buffer::BufferChunks>& messageChunksMap : chunksMap.second)
+            for (const auto& messageChunksMap : chunksMap.second)
             {
                 // Next Message ID
                 MessageID messageID = messageChunksMap.first;
@@ -1101,13 +1101,13 @@ namespace ssdk::transport_amd
         bufferSize += sizeof(uint8_t);
         // Channel count
         bufferSize += sizeof(uint8_t);
-        for (const std::pair<uint8_t, MessageChunks::MessageChunksMap>& chunksMap : messageChunks)
+        for (const auto& chunksMap : messageChunks)
         {
             // Next Channel ID
             bufferSize += sizeof(uint8_t);
             // Message count for channel
             bufferSize += sizeof(uint32_t);
-            for (const std::pair<MessageID, Buffer::BufferChunks>& messageChunksMap : chunksMap.second)
+            for (const auto& messageChunksMap : chunksMap.second)
             {
                 // Next Message ID
                 bufferSize += sizeof(MessageID);

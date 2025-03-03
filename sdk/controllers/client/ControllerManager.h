@@ -36,7 +36,7 @@
 #include "MouseController.h"
 #include "KeyboardController.h"
 #include "GameController.h"
-#include "TouchEvent.h"
+#include "controllers/TouchEvent.h"
 #include "TrackedHeadset.h"
 #include "transports/transport-common/ClientTransport.h"
 #include "MouseCursor.h"
@@ -81,6 +81,7 @@ namespace ssdk::ctls
         void OnConnectionEstablished();
         void OnConnectionTerminated();
         void OnSensorsUpdate();
+        void ReleaseModifiers();
 
         class SensorsThread : public amf::AMFThread
         {

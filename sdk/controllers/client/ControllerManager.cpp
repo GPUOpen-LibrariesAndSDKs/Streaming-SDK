@@ -65,7 +65,7 @@ namespace ssdk::ctls
         bool bRemoved = false;
         for (std::vector<ControllerBase::Ptr>::iterator it = m_Controllers.begin(); it != m_Controllers.end(); it++)
         {
-            if (pController = *it)
+            if (pController == *it)
             {
                 m_Controllers.erase(it);
                 bRemoved = true;
@@ -118,6 +118,18 @@ namespace ssdk::ctls
         }
 
         return result;
+    }
+
+    //-------------------------------------------------------------------------------------------------
+    void ControllerManager::ReleaseModifiers()
+    {
+        for (const ControllerBase::Ptr& pController : m_Controllers)
+        {
+            if (pController != nullptr)
+            {
+                pController->ReleaseModifiers();
+            }
+        }
     }
 
     //-------------------------------------------------------------------------------------------------

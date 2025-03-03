@@ -42,7 +42,7 @@ THE SOFTWARE.
 #endif
 
 #include "Transport.h"
-#include "controllers/client/ControllerBase.h"
+#include "controllers/ControllerTypes.h"
 
 #include <string>
 #include <memory>

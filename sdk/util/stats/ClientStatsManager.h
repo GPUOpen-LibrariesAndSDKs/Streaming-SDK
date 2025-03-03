@@ -35,6 +35,7 @@
 
 #include "transports/transport-common/ClientTransport.h"
 #include "util/QoS/ValueHistory.h"
+#include "amf/public/common/Thread.h"
 
 #include <map>
 

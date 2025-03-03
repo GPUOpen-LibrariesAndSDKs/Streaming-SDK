@@ -34,6 +34,4 @@
 
 #if defined(_WIN32)
 #include "win/GameControllerWin.h"
-#else
-#include "lnx/GameControllerLnx.h"
 #endif

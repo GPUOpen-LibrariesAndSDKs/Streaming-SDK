@@ -6,39 +6,37 @@ project(util)
 # Define source files
 set(SOURCE_FILES
     ${SOURCE_FILES}
-    mbedtls/library/sha256.c
-    ${SUBFOLDER_UTIL}/encryption/AESPSKCipher.cpp
-    ${SUBFOLDER_UTIL}/pipeline/SynchronousSlot.cpp
-    ${SUBFOLDER_UTIL}/pipeline/AsynchronousSlot.cpp
-    ${SUBFOLDER_UTIL}/pipeline/PipelineSlot.cpp
-    ${SUBFOLDER_UTIL}/pipeline/AVPipeline.cpp
-    ${SUBFOLDER_UTIL}/pipeline/AVSynchronizer.cpp
-    ${SUBFOLDER_UTIL}/pipeline/AVDispatcher.cpp
-    ${SUBFOLDER_UTIL}/pipeline/AVTransmitterAdapter.cpp
-    ${SUBFOLDER_UTIL}/pipeline/TimestampCalibrator.cpp
-    ${SUBFOLDER_UTIL}/stats/ComponentStats.cpp
-    ${SUBFOLDER_UTIL}/stats/ClientStatsManager.cpp
-    ${SUBFOLDER_UTIL}/QoS/QoS.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encryption/AESPSKCipher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/SynchronousSlot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AsynchronousSlot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/PipelineSlot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVPipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVSynchronizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVDispatcher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVTransmitterAdapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/TimestampCalibrator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/stats/ComponentStats.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/stats/ClientStatsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/QoS/QoS.cpp
     PARENT_SCOPE
  )
 
 # Define header files
 set(HEADER_FILES
     ${HEADER_FILES}
-    mbedtls/include/mbedtls/sha256.h
-    ${SUBFOLDER_UTIL}/encryption/AESPSKCipher.h
-    ${SUBFOLDER_UTIL}/pipeline/PipelineSlot.h
-    ${SUBFOLDER_UTIL}/pipeline/SynchronousSlot.h
-    ${SUBFOLDER_UTIL}/pipeline/AsynchronousSlot.h
-    ${SUBFOLDER_UTIL}/pipeline/AVPipeline.h
-    ${SUBFOLDER_UTIL}/pipeline/AVSynchronizer.h
-    ${SUBFOLDER_UTIL}/pipeline/AVDispatcher.h
-    ${SUBFOLDER_UTIL}/pipeline/AVTransmitterAdapter.h
-    ${SUBFOLDER_UTIL}/pipeline/TimestampCalibrator.h
-    ${SUBFOLDER_UTIL}/stats/ComponentStats.h
-    ${SUBFOLDER_UTIL}/stats/ClientStatsManager.h
-    ${SUBFOLDER_UTIL}/QoS/QoS.h
-    ${SUBFOLDER_UTIL}/QoS/ValueHistory.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encryption/AESPSKCipher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/PipelineSlot.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/SynchronousSlot.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AsynchronousSlot.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVPipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVSynchronizer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVDispatcher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/AVTransmitterAdapter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/TimestampCalibrator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/stats/ComponentStats.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/stats/ClientStatsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/QoS/QoS.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/QoS/ValueHistory.h
     PARENT_SCOPE
  )
 

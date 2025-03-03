@@ -68,11 +68,7 @@ namespace ssdk::ctls
     class MouseController : public ControllerBase
     {
     public:
-#if defined(_WIN32)
         MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter, ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, amf_handle hWnd, bool useRelativeInput);
-#else
-        MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter, ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, Display* dpy, amf_handle hWnd, bool useRelativeInput);
-#endif
         virtual ~MouseController();
 
         // Input interface;
@@ -87,13 +83,8 @@ namespace ssdk::ctls
 
     protected:
         void UpdateFromServer();
-#if defined(_WIN32)
         void InitRawInput();
         AMF_RESULT  UpdateFromInternalInput(LPARAM lParam);
-#else
-        AMF_RESULT  UpdateFromInternalInput(const WindowMessage& msg);
-#endif
-
         void CalculateMousePos(AMFFloatPoint2D& mousePos, AMFRect rcViewport, AMFSize frameSize) const noexcept;
 
         inline MouseControllerConfigPtr AMF_STD_CALL GetMouseConfig() const { return std::dynamic_pointer_cast<MouseControllerConfig> (m_pConfig); };
@@ -109,15 +100,12 @@ namespace ssdk::ctls
         };
 
         amf_handle                              m_hWnd;
-        WindowPoint                             m_LastMousePoint;
+        WindowPoint                             m_LastMousePoint{0,0};
         amf::AMFCriticalSection                 m_Sect;
         AMFByteArray                            m_Data;
         bool                                    m_bRelativePos;
         bool                                    m_bRawInputInitialized;
         VideoPresenterPtr                       m_pVideoPresenter;
         ssdk::video::VideoReceiverPipeline::Ptr m_pVideoPipeline;
-#if defined(__linux)
-        Display* m_dpy{};
-#endif
     };
 }// namespace ssdk::ctls

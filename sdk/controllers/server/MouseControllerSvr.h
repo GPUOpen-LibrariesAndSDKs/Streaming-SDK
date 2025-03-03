@@ -78,8 +78,10 @@ namespace ssdk::ctls::svr
         amf_pts                 m_LastMouseSent;
         amf::AMFSurfacePtr      m_pLastCursor;
         bool                    m_bSendLastCursorToNewUser;
+        bool                    m_bSendLastCursorPosToNewUser;
         bool                    m_bLastMouseVisible;
         uint8_t                 m_CursorUpdateCounter;
+        uint8_t                 m_CursorPosUpdateCounter;
     };
 
 } // namespace ssdk::ctls::svr

@@ -115,7 +115,15 @@ namespace ssdk::video
                     {
                         m_Scaler->Terminate();
                     }
-                    if (InitDenoiser() == AMF_OK && InitScaler() == AMF_OK && InitConverter() == AMF_OK)
+                    if (InitDenoiser() != AMF_OK)
+                    {
+                        AMFTraceWarning(AMF_FACILITY, L"Video denoiser is not supported on this platform");
+                    }
+                    if (InitScaler() != AMF_OK)
+                    {
+                        AMFTraceWarning(AMF_FACILITY, L"High-quality video upscaler is not supported on this platform");
+                    }
+                    if (InitConverter() == AMF_OK)
                     {
                         ssdk::util::AVSynchronizer::VideoInput::Ptr videoSink;
                         m_AVSynchronizer->GetVideoInput(videoSink); //  AV Syncronizer's video input terminates the pipeline and passes the frame to the presenter, for video it's just a passthrough

@@ -6,43 +6,43 @@ project(video)
 # Define source files
 set(SOURCE_FILES
     ${SOURCE_FILES}
-    ${SUBFOLDER_VIDEO}/encoders/VideoEncodeEngine.cpp
-    ${SUBFOLDER_VIDEO}/encoders/HDREncoder.cpp
-    ${SUBFOLDER_VIDEO}/encoders/GPUEncoderH264.cpp
-    ${SUBFOLDER_VIDEO}/encoders/GPUEncoderHEVC.cpp
-    ${SUBFOLDER_VIDEO}/encoders/GPUEncoderAV1.cpp
-    ${SUBFOLDER_VIDEO}/MonoscopicVideoOutput.cpp
-    ${SUBFOLDER_VIDEO}/decoders/VideoDecodeEngine.cpp
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoder.cpp
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoderH264.cpp
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoderHEVC.cpp
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoderAV1.cpp
-    ${SUBFOLDER_VIDEO}/MonoscopicVideoInput.cpp
-    ${SUBFOLDER_VIDEO}/Defines.cpp
-    ${SUBFOLDER_VIDEO}/VideoReceiverPipeline.cpp
-    ${SUBFOLDER_VIDEO}/VideoDispatcher.cpp
-    ${SUBFOLDER_VIDEO}/VideoTransmitterAdapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/VideoEncodeEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/HDREncoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/GPUEncoderH264.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/GPUEncoderHEVC.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/GPUEncoderAV1.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/MonoscopicVideoOutput.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/VideoDecodeEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoderH264.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoderHEVC.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoderAV1.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/MonoscopicVideoInput.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Defines.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/VideoReceiverPipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/VideoDispatcher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/VideoTransmitterAdapter.cpp
     PARENT_SCOPE
 )
 
 # Define header files
 set(HEADER_FILES
     ${HEADER_FILES}
-    ${SUBFOLDER_VIDEO}/encoders/VideoEncodeEngine.h
-    ${SUBFOLDER_VIDEO}/encoders/HDREncoder.h
-    ${SUBFOLDER_VIDEO}/encoders/GPUEncoderH264.h
-    ${SUBFOLDER_VIDEO}/encoders/GPUEncoderHEVC.h
-    ${SUBFOLDER_VIDEO}/encoders/GPUEncoderAV1.h
-    ${SUBFOLDER_VIDEO}/MonoscopicVideoOutput.h
-    ${SUBFOLDER_VIDEO}/decoders/VideoDecodeEngine.h
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoder.h
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoderH264.h
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoderHEVC.h
-    ${SUBFOLDER_VIDEO}/decoders/UVDDecoderAV1.h
-    ${SUBFOLDER_VIDEO}/MonoscopicVideoInput.h
-    ${SUBFOLDER_VIDEO}/Defines.h
-    ${SUBFOLDER_VIDEO}/VideoReceiverPipeline.h
-    ${SUBFOLDER_VIDEO}/VideoDispatcher.h
-    ${SUBFOLDER_VIDEO}/VideoTransmitterAdapter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/VideoEncodeEngine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/HDREncoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/GPUEncoderH264.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/GPUEncoderHEVC.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/GPUEncoderAV1.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/MonoscopicVideoOutput.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/VideoDecodeEngine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoderH264.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoderHEVC.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/UVDDecoderAV1.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/MonoscopicVideoInput.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Defines.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/VideoReceiverPipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/VideoDispatcher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/VideoTransmitterAdapter.h
     PARENT_SCOPE
 )

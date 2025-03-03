@@ -35,6 +35,7 @@ THE SOFTWARE.
 #pragma once
 
 #include "ControllerBaseSvr.h"
+#include "controllers/TouchEvent.h"
 
 namespace ssdk::ctls::svr
 {

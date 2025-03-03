@@ -50,6 +50,7 @@ THE SOFTWARE.
 #include "amf/public/common/ByteArray.h"
 #include "transports/transport-amd/messages/video/Cursor.h"
 #include "controllers/UserInput.h"
+#include "controllers/TouchEvent.h"
 #include "transports/transport-amd/messages/service/GenericMessage.h"
 #include "sdk/video/Defines.h"
 #include <sstream>
@@ -243,17 +244,6 @@ namespace ssdk::transport_amd
                 {
                     pASCallback->OnAudioStreamSubscribed(hSession, start.GetAudioStreamID());
                 }
-
-                // Start sensors thread in server
-                ConnectionManagerCallback* pCMcallback = m_InitParams.GetConnectionManagerCallback();
-                if (pCMcallback != nullptr)
-                {
-                    pCMcallback->OnClientSubscribed(hSession);
-                }
-
-                // To start sensors thread in old client
-                GenericMessage message(START_SENSOR);
-                pSubscriber->TransmitMessage(Channel::SERVICE, message.GetSendData(), message.GetSendSize());
             }
         }
     }
@@ -590,6 +580,12 @@ namespace ssdk::transport_amd
                                     event.type = pICCallback->GetExpectedEventDataType(controlID);
                                     if (event.type != amf::AMF_VARIANT_TYPE::AMF_VARIANT_EMPTY)
                                     {
+                                        if (event.type == amf::AMF_VARIANT_TYPE::AMF_VARIANT_INTERFACE)
+                                        {
+                                            event.pInterface = new ssdk::ctls::TouchEvent();
+                                            event.pInterface->Acquire();
+                                        }
+                                        
                                         deData[i].GetVariantValue(event);
 
                                         ssdk::ctls::CtlEvent ctlEvent;
@@ -598,6 +594,12 @@ namespace ssdk::transport_amd
 
                                         // Call controller input event callback
                                         pICCallback->OnControllerInputEvent(session->GetSessionHandle(), controlID, ctlEvent);
+
+                                        if (event.type == amf::AMF_VARIANT_TYPE::AMF_VARIANT_INTERFACE && event.pInterface != nullptr)
+                                        {
+                                            event.pInterface->Release();
+                                            event.pInterface = nullptr;
+                                        }
                                     }
                                 }
                             }
@@ -644,11 +646,29 @@ namespace ssdk::transport_amd
                 }
                 else if (data.GetAck() == true)
                 {
-                    pSubscriber->SetLastVideoInitAckReceived(data.GetID());
-                    if (pVSCallback != nullptr)
+                    if (session != nullptr)
                     {
-                        pVSCallback->OnReadyToReceiveVideo(session->GetSessionHandle(), data.GetStreamID(), data.GetID());
+                        SessionHandle hSession = session->GetSessionHandle();
+                        pSubscriber->SetLastVideoInitAckReceived(data.GetID());
+                        if (pVSCallback != nullptr)
+                        {
+                            pVSCallback->OnReadyToReceiveVideo(hSession, data.GetStreamID(), data.GetID());
+                        }
+
+                        // Client received video init, initialized input with viewport and then sent init-ack back to server
+                        // Now call OnClientSubscribed callback since client is ready to receive video and controllers events
+                        // Callback will start sensors thread in server and send controllers events in this server sample implementation
+                        ConnectionManagerCallback* pCMcallback = m_InitParams.GetConnectionManagerCallback();
+                        if (pCMcallback != nullptr)
+                        {
+                            pCMcallback->OnClientSubscribed(hSession);
+                        }
+
+                        // To start sensors thread in old client
+                        GenericMessage message(START_SENSOR);
+                        pSubscriber->TransmitMessage(Channel::SERVICE, message.GetSendData(), message.GetSendSize());
                     }
+
                     AMFTraceInfo(AMF_FACILITY, L"OnVideoOutMessage - VIDEO_OP_CODE INIT_ACK received from client %S at %S for extra data ID %lld", pSubscriber->GetID(), pSubscriber->GetSubscriberIPAddress(), data.GetID());
                 }
                 else

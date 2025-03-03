@@ -48,6 +48,29 @@ namespace ssdk::ctls::svr
     public:
         TouchScreenControllerWin(ControllerManagerPtr pControllerManager);
         virtual ~TouchScreenControllerWin() {}
+
+        virtual void ProcessInputEvent(const char* eventID, const ssdk::ctls::CtlEvent& event) override;
+
+    protected:
+        void SetScreenSize(AMFSize screenSize);
+        AMFSize GetScreenSize();
+        bool GetMousePosition(AMFPoint* pos) const;
+        POINTER_TOUCH_INFO DefaultPointerTouchInfo() const;
+        POINTER_INFO DefaultPointerInfo() const;
+
+        void UpdateTouch(const POINTER_TOUCH_INFO& touchInfo);
+        void RemoveTouch(UINT32 pointerId);
+
+        enum Flags {
+            TOUCH_BEGIN = POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_DOWN,
+            TOUCH_MOVE = POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT | POINTER_FLAG_UPDATE,
+            TOUCH_END = POINTER_FLAG_UP
+        };
+
+    private:
+        using Touches = std::vector<POINTER_TOUCH_INFO>;
+        Touches m_Touches;
+        AMFSize m_ScreenSize{ 1920, 1080 };
     };
 
 } // namespace ssdk::ctls::svr

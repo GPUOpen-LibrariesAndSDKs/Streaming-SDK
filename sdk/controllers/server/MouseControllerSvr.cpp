@@ -52,8 +52,10 @@ namespace ssdk::ctls::svr
         m_LastMouseSent(0),
         m_pLastCursor(nullptr),
         m_bSendLastCursorToNewUser(false),
+        m_bSendLastCursorPosToNewUser(false),
         m_bLastMouseVisible(false),
-        m_CursorUpdateCounter(0)
+        m_CursorUpdateCounter(0),
+        m_CursorPosUpdateCounter(0)
     {
         m_ID = DEVICE_MOUSE;
     }
@@ -75,10 +77,12 @@ namespace ssdk::ctls::svr
             bool bPosAcquire = GetMousePosition(&mousePosition);
             amf_pts now = amf_high_precision_clock();
 
-            if (bPosAcquire && mousePosition != m_LastMousePos)
+            // Send mouse position if it changed or pos is not changed but we got new user connected or update counter still isn't full
+            if (bPosAcquire && (mousePosition != m_LastMousePos || m_bSendLastCursorPosToNewUser || m_CursorPosUpdateCounter < CURSOR_UPDATE_COUNTER_MAX))
             {
                 m_LastMouseSent = now;
-                // AMFTraceInfo(AMF_FACILITY, L"UpdateMouse m_LastMousePos %d %d pt %d %d", m_LastMousePos.x, m_LastMousePos.y, pt.x, pt.y);
+                //AMFTraceInfo(AMF_FACILITY, L"UpdateMouse m_LastMousePos %d %d mousePosition %d %d NewUser %d PosUpdateCounter %d",
+                //    m_LastMousePos.x, m_LastMousePos.y, mousePosition.x, mousePosition.y, m_bSendLastCursorPosToNewUser, m_CursorPosUpdateCounter);
 
                 if (m_pControllerManager != nullptr)
                 {
@@ -96,6 +100,12 @@ namespace ssdk::ctls::svr
 
                         // Move mouse cursor
                         pServerTransport->MoveCursor(pos.x / float(screenSize.width - 1), pos.y / float(screenSize.height - 1));
+
+                        m_bSendLastCursorPosToNewUser = false;
+                        if (m_CursorPosUpdateCounter < CURSOR_UPDATE_COUNTER_MAX)
+                        {
+                            m_CursorPosUpdateCounter++;
+                        }
                     }
                 }
 
@@ -136,7 +146,6 @@ namespace ssdk::ctls::svr
                     {
                         bool bMouseVisible = (pCursorSurface != nullptr);
                         //AMFTraceInfo(AMF_FACILITY, L"UpdateMouse m_LastMousePos %d %d CursorUpdateCounter = %d", m_LastMousePos.x, m_LastMousePos.y, m_CursorUpdateCounter);
-                        m_CursorUpdateCounter++;
 
                         if (bMouseVisible || m_bLastMouseVisible)
                         {
@@ -177,6 +186,10 @@ namespace ssdk::ctls::svr
                                 pServerTransport->SetCursor(cursor);
                             }
                             m_bSendLastCursorToNewUser = false;
+                            if (m_CursorUpdateCounter < CURSOR_UPDATE_COUNTER_MAX)
+                            {
+                                m_CursorUpdateCounter++;
+                            }
                         }
 
                         m_bLastMouseVisible = bMouseVisible;
@@ -237,8 +250,8 @@ namespace ssdk::ctls::svr
 
         m_LastMousePos = AMFConstructPoint(-1, -1);
         m_LastMouseSent = 0;
-        m_bSendLastCursorToNewUser = true;
-        m_CursorUpdateCounter = 0;
+        m_bSendLastCursorToNewUser = m_bSendLastCursorPosToNewUser = true;
+        m_CursorUpdateCounter = m_CursorPosUpdateCounter = 0;
         if (m_pControllerManager != nullptr)
         {
             amf::AMFCursorCapturePtr pCursorCapture = m_pControllerManager->GetCursorCapture();

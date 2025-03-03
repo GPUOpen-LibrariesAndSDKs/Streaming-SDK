@@ -31,24 +31,12 @@
 // THE SOFTWARE.
 //
 
-
-#if defined(_WIN32)
 #include "RemoteDesktopServerWin.h"
 
 int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, LPWSTR /*lpCmdLine*/, int /*nCmdShow*/)
-#else
-#include "RemoteDesktopServerLinux.h"
-
-int main(int argc, const char** argv)
-#endif
 {
     int result = -1;
-    RemoteDesktopServer::Ptr    pApp;
-#if defined(_WIN32)
-    pApp = RemoteDesktopServer::Ptr(new RemoteDesktopServerWin);
-#else
-    pApp = RemoteDesktopServer::Ptr(new RemoteDesktopServerLinux);
-#endif
+    RemoteDesktopServer::Ptr pApp = RemoteDesktopServer::Ptr(new RemoteDesktopServerWin);
 
     if (pApp != nullptr)
     {

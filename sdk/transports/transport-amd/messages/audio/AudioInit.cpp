@@ -87,7 +87,9 @@ namespace ssdk::transport_amd
         GetInt32Value(root, TAG_SAMPLE_RATE, m_iSampleRate);
         GetInt32Value(root, TAG_CHANNELS, m_iChannels);
         GetInt32Value(root, TAG_LAYOUT, m_iChannelLayout);
-        GetInt32Value(root, TAG_FORMAT, reinterpret_cast<int32_t&>(m_iFormat));
+        int32_t iFormat = 0;
+        GetInt32Value(root, TAG_FORMAT, iFormat);
+        m_iFormat = (amf::AMF_AUDIO_FORMAT)iFormat;
         GetInt64Value(root, TAG_AUDIOINIT_ID, m_ID);
         if (GetStringValue(root, TAG_CODEC_ID, m_CodecID) == false)
         {

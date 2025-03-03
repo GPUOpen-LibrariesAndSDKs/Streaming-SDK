@@ -220,10 +220,13 @@ RemoteDesktopServer::Status RemoteDesktopServer::Init()
                     g_AMFFactory.GetTrace()->EnableWriter(AMF_TRACE_WRITER_FILE, false);
                 }
 
-                int64_t port = DEFAULT_PORT;
+                int64_t port = m_Port = DEFAULT_PORT;
                 if (GetParam(PARAM_NAME_SHUTDOWN, port) == AMF_OK)
                 {
-                    m_Port = uint16_t(port);
+                    if (port != 0)
+                    {
+                        m_Port = uint16_t(port);
+                    }
                     result = Status::SKIP;
                 }
                 else if (GetParam(PARAM_NAME_PORT, port) == AMF_OK)
@@ -427,7 +430,7 @@ void RemoteDesktopServer::TerminateAMF()
 bool RemoteDesktopServer::InitVideoCapture()
 {
     bool result = false;
-    AMF_RESULT amfResult = AMF_FAIL;
+    AMF_RESULT amfResult = AMF_OK;
 
     if (m_VideoCapture == nullptr)  //  Check for nullptr since capture can be created by the platform-specific derived class, e.g. MS Desktop Duplication
     {

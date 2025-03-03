@@ -40,6 +40,7 @@
 #include "controllers/server/win/MouseControllerWinSvr.h"
 #include "controllers/server/win/KeyboardControllerWinSvr.h"
 #include "controllers/server/win/GameControllerWinSvr.h"
+#include "controllers/server/win/TouchScreenControllerWinSvr.h"
 
 #include "amf/public/common/TraceAdapter.h"
 
@@ -314,6 +315,8 @@ bool RemoteDesktopServerWin::InitControllers()
     {
         m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::GameControllerWin(m_pControllerManager, i)));
     }
+
+    m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::TouchScreenControllerWin(m_pControllerManager)));
 
     AMFTraceDebug(AMF_FACILITY, L"Controller Manager initialized");
 

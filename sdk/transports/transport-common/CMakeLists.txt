@@ -6,22 +6,22 @@ project(transport-common)
 # Define source files
 set(SOURCE_FILES
     ${SOURCE_FILES}
-    ${SUBFOLDER_TRANSPORT_COMMON}/Controller.cpp
-    ${SUBFOLDER_TRANSPORT_COMMON}/Video.cpp
-	${SUBFOLDER_TRANSPORT_COMMON}/Audio.cpp
-	${SUBFOLDER_TRANSPORT_COMMON}/ClientTransport.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Video.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Audio.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ClientTransport.cpp
     PARENT_SCOPE
 )
 
 # Define header files
 set(HEADER_FILES
     ${HEADER_FILES}
-    ${SUBFOLDER_TRANSPORT_COMMON}/Controller.h
-    ${SUBFOLDER_TRANSPORT_COMMON}/Video.h
-    ${SUBFOLDER_TRANSPORT_COMMON}/Audio.h
-    ${SUBFOLDER_TRANSPORT_COMMON}/ClientTransport.h
-    ${SUBFOLDER_TRANSPORT_COMMON}/CodecDescriptor.h
-    ${SUBFOLDER_TRANSPORT_COMMON}/ServerTransport.h
-    ${SUBFOLDER_TRANSPORT_COMMON}/Transport.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Video.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Audio.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ClientTransport.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/CodecDescriptor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ServerTransport.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Transport.h
     PARENT_SCOPE
 )

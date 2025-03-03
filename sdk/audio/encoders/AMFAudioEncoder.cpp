@@ -90,19 +90,19 @@ namespace ssdk::audio
 
         //  Some codecs might not support specific sampling rates, formats and so on, so read them back after initializing the encoder in case they were reverted to their defaults
         //  This is necessary to initialize the audio converter in such a way that its output matches the encoder input
-        int64_t format;
+        int64_t format = amf::AMFAF_S16;
         encoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_FORMAT, &format);
         m_Format = static_cast<amf::AMF_AUDIO_FORMAT>(format);
 
-        int64_t encoderSamplingRate;
+        int64_t encoderSamplingRate = 44100;
         encoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_SAMPLE_RATE, &encoderSamplingRate);
         m_SamplingRate = static_cast<int32_t>(encoderSamplingRate);
 
-        int64_t encoderChannels;
+        int64_t encoderChannels = 2;
         encoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNELS, &encoderChannels);
         m_Channels = static_cast<int32_t>(encoderChannels);
 
-        int64_t encoderLayout;
+        int64_t encoderLayout = 3;
         encoder->GetProperty(AUDIO_ENCODER_IN_AUDIO_CHANNEL_LAYOUT, &encoderLayout);
         m_Layout = static_cast<int32_t>(encoderLayout);
 

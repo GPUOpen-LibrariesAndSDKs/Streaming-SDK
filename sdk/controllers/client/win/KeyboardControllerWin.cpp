@@ -87,9 +87,10 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT KeyboardController::ReleaseModifiersKey()
+    void KeyboardController::ReleaseModifiers()
     {
-        return AMF_OK;
+        
     }
+    
 }// namespace ssdk::ctls
 #endif

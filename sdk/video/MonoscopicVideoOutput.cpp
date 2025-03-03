@@ -419,7 +419,7 @@ namespace ssdk::video
         result = m_Encoder->QueryOutput(&compressedFrame, frameType);
         if (compressedFrame != nullptr)
         {   //  Encoder has produced some output - prepare and send the frame to all clients
-            amf_pts originPts;
+            amf_pts originPts = 0;
             compressedFrame->GetProperty(ORIGIN_PTS_PROPERTY, &originPts);
             amf_pts encoderInPts = 0;
             if (compressedFrame->GetProperty(VIDEO_ENCODER_IN_PTS, &encoderInPts) == AMF_OK)

@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.15)
 # Define the project name
 project(RemoteDesktopServer)
 
+if(WIN32)
+
 # On Windows we want the client to be a Windows (non-console) application
 if(MSVC)
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /SUBSYSTEM:WINDOWS")
@@ -14,35 +16,31 @@ endif()
 set(SOURCE_FILES
     "main.cpp"
     "RemoteDesktopServer.cpp"
-    "RemoteDesktopServerWin.cpp"
-    "RemoteDesktopServerLinux.cpp"
     "AVStreamer.cpp"
+    "RemoteDesktopServerWin.cpp"
  )
 
 # Define header files
 set(HEADER_FILES
     "RemoteDesktopServer.h"
-    "RemoteDesktopServerWin.h"
-    "RemoteDesktopServerLinux.h"
     "AVStreamer.h"
+    "RemoteDesktopServerWin.h"
  )
 
 # Add the executable
 add_executable(RemoteDesktopServer ${SOURCE_FILES} ${HEADER_FILES})
 
-if(WIN32)
-    # Define the path for the manifest file
-    set(MANIFEST_FILE "app.manifest")
-    get_filename_component(MANIFEST_FILE_ABS ${MANIFEST_FILE} ABSOLUTE)
-    # Add a custom command to embed the manifest file into the executable
-    add_custom_command(
-        TARGET RemoteDesktopServer
-        POST_BUILD
-        COMMAND ${WINDOWS_SDK_BIN}/mt.exe -manifest ${MANIFEST_FILE_ABS} -outputresource:$<TARGET_FILE:RemoteDesktopServer>\\;1
-        COMMENT "Embedding manifest file into RemoteDesktopServer"
-        VERBATIM
-    )
-endif()
+# Define the path for the manifest file
+set(MANIFEST_FILE "app.manifest")
+get_filename_component(MANIFEST_FILE_ABS ${MANIFEST_FILE} ABSOLUTE)
+# Add a custom command to embed the manifest file into the executable
+add_custom_command(
+    TARGET RemoteDesktopServer
+    POST_BUILD
+    COMMAND ${WINDOWS_SDK_BIN}/mt.exe -manifest ${MANIFEST_FILE_ABS} -outputresource:$<TARGET_FILE:RemoteDesktopServer>\\;1
+    COMMENT "Embedding manifest file into RemoteDesktopServer"
+    VERBATIM
+)
 
 # Include directories
 target_include_directories(RemoteDesktopServer PUBLIC
@@ -64,11 +62,9 @@ set(LIBRARIES
     amf-public
 )
 
-if(WIN32)
 set(PLATFORM_LIBRARIES Xinput.lib)
-else()
-set(PLATFORM_LIBRARIES X11 Xfixes)
-endif()
+
+add_dependencies(RemoteDesktopServer ssdk amf-public amf-component-ffmpeg64 mbedtls-custom)
 
 target_link_libraries(RemoteDesktopServer PRIVATE
     ${LIBRARIES}
@@ -85,3 +81,4 @@ target_link_directories(RemoteDesktopServer PRIVATE
 target_link_libraries(RemoteDesktopServer PRIVATE
     mbedtls-custom
 )
+endif()

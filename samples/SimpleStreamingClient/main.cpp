@@ -33,27 +33,17 @@ THE SOFTWARE.
 
 */
 
-#if defined(_WIN32)
 #include "SimpleStreamingClientWin.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR lpCmdLine, int /*nCmdShow*/)
-#else
-#include "SimpleStreamingClientLinux.h"
-
-int main(int argc, const char** argv)
-#endif
 {
     int result = 0;
-    SimpleStreamingClient::Ptr  pApp;
-
-#if defined(_WIN32)
-    pApp = SimpleStreamingClient::Ptr(new SimpleStreamingClientWin(hInstance, SW_MAXIMIZE, lpCmdLine));
-#else
-    pApp = SimpleStreamingClient::Ptr(new SimpleStreamingClientLinux(argv));
-#endif
+    SimpleStreamingClient::Ptr pApp = SimpleStreamingClient::Ptr(new SimpleStreamingClientWin(hInstance, SW_MAXIMIZE, lpCmdLine));
+    int argc = 0;
+    const char** argv = nullptr;
     if (pApp != nullptr)
     {
-        if (pApp->Init() == true)
+        if (pApp->Init(argc, argv) == true)
         {
             pApp->RunMessageLoop();
             result = 0;

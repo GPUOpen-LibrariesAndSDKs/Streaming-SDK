@@ -1,44 +1,44 @@
-cmake_minimum_required(VERSION 3.15)
+# cmake_minimum_required(VERSION 3.15)
 
 # Define the project name
-project(audio)
+# project(audio)
 
 # Define source files
 set(SOURCE_FILES
     ${SOURCE_FILES}
-    ${SUBFOLDER_AUDIO}/encoders/AudioEncodeEngine.cpp
-    ${SUBFOLDER_AUDIO}/encoders/AMFAudioEncoder.cpp
-    ${SUBFOLDER_AUDIO}/encoders/AudioEncoderAAC.cpp
-    ${SUBFOLDER_AUDIO}/encoders/AudioEncoderOPUS.cpp
-    ${SUBFOLDER_AUDIO}/AudioOutput.cpp
-    ${SUBFOLDER_AUDIO}/decoders/AudioDecodeEngine.cpp
-    ${SUBFOLDER_AUDIO}/decoders/AMFAudioDecoder.cpp
-    ${SUBFOLDER_AUDIO}/decoders/AudioDecoderAAC.cpp
-    ${SUBFOLDER_AUDIO}/decoders/AudioDecoderOPUS.cpp
-    ${SUBFOLDER_AUDIO}/AudioCodecs.cpp
-    ${SUBFOLDER_AUDIO}/AudioInput.cpp
-    ${SUBFOLDER_AUDIO}/AudioReceiverPipeline.cpp
-    ${SUBFOLDER_AUDIO}/AudioDispatcher.cpp
-    ${SUBFOLDER_AUDIO}/AudioTransmitterAdapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AudioEncodeEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AMFAudioEncoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AudioEncoderAAC.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AudioEncoderOPUS.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioOutput.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AudioDecodeEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AMFAudioDecoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AudioDecoderAAC.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AudioDecoderOPUS.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioCodecs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioInput.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioReceiverPipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioDispatcher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioTransmitterAdapter.cpp
     PARENT_SCOPE
 )
 
 # Define header files
 set(HEADER_FILES
     ${HEADER_FILES}
-    ${SUBFOLDER_AUDIO}/encoders/AudioEncodeEngine.h
-    ${SUBFOLDER_AUDIO}/encoders/AMFAudioEncoder.h
-    ${SUBFOLDER_AUDIO}/encoders/AudioEncoderAAC.h
-    ${SUBFOLDER_AUDIO}/encoders/AudioEncoderOPUS.h
-    ${SUBFOLDER_AUDIO}/AudioOutput.h
-    ${SUBFOLDER_AUDIO}/decoders/AudioDecodeEngine.h
-    ${SUBFOLDER_AUDIO}/decoders/AMFAudioDecoder.h
-    ${SUBFOLDER_AUDIO}/decoders/AudioDecoderAAC.h
-    ${SUBFOLDER_AUDIO}/decoders/AudioDecoderOPUS.h
-    ${SUBFOLDER_AUDIO}/AudioCodecs.h
-    ${SUBFOLDER_AUDIO}/AudioInput.h
-    ${SUBFOLDER_AUDIO}/AudioReceiverPipeline.h
-    ${SUBFOLDER_AUDIO}/AudioDispatcher.h
-    ${SUBFOLDER_AUDIO}/AudioTransmitterAdapter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AudioEncodeEngine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AMFAudioEncoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AudioEncoderAAC.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/encoders/AudioEncoderOPUS.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioOutput.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AudioDecodeEngine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AMFAudioDecoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AudioDecoderAAC.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders/AudioDecoderOPUS.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioCodecs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioInput.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioReceiverPipeline.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioDispatcher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/AudioTransmitterAdapter.h
     PARENT_SCOPE
 )

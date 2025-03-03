@@ -50,8 +50,7 @@ namespace ssdk::ctls
         virtual AMF_RESULT  AMF_STD_CALL ProcessMessage(const WindowMessage& msg) override;
         virtual void        AMF_STD_CALL OnConnectionEstablished() override;
         virtual void        AMF_STD_CALL OnConnectionTerminated() override;
-
-        AMF_RESULT ReleaseModifiersKey();
+        virtual void        AMF_STD_CALL ReleaseModifiers() override;
 
     protected:
         enum CONTROLLER_ID_INDEX_ENUM

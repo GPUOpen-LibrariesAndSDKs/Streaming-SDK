@@ -102,14 +102,14 @@ SimpleStreamingClient* SimpleStreamingClient::GetInstance()
     return m_This;
 }
 
-bool SimpleStreamingClient::Init()
+bool SimpleStreamingClient::Init(int argc, const char** argv)
 {
     bool result = false;
     if (this == m_This)
     {
         if (InitAMF() == true)
         {
-            if (parseCmdLineParameters(this) != true)
+            if (parseCmdLineParameters(this, argc, (char**)argv) != true)
             {
                 AMFTraceError(AMF_FACILITY, L"parseCmdLineParameters() failed");
             }
@@ -505,13 +505,13 @@ bool SimpleStreamingClient::InitVideo()
             m_VideoPipeline = ssdk::video::VideoReceiverPipeline::Ptr(new ssdk::video::VideoReceiverPipeline(m_Context, m_VideoPresenter, m_AVSynchronizer));
             int64_t uvdInstance = 0;
             GetParam(PARAM_NAME_UVD_INSTANCE, uvdInstance);
-            bool reserveAspectRation = true;
-            GetParam(PARAM_NAME_PRESERVE_ASPECT, reserveAspectRation);
+            bool preserveAspectRatio = true;
+            GetParam(PARAM_NAME_PRESERVE_ASPECT, preserveAspectRatio);
             bool hqUpscale = true;
             GetParam(PARAM_NAME_HQUPSCALE, hqUpscale);
             bool videoDenoiser = true;
             GetParam(PARAM_NAME_VIDEO_DENOISER, videoDenoiser);
-            if ((amfRes = m_VideoPipeline->Init(uvdInstance, reserveAspectRation, hqUpscale, videoDenoiser)) != AMF_OK)
+            if ((amfRes = m_VideoPipeline->Init(uvdInstance, preserveAspectRatio, hqUpscale, videoDenoiser)) != AMF_OK)
             {
                 AMFTraceError(AMF_FACILITY, L"Failed to initialize video pipeline, result=%s", amf::AMFGetResultText(amfRes));
                 result = false;

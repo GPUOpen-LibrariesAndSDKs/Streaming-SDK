@@ -43,7 +43,7 @@ namespace ssdk::ctls::svr
     TouchScreenController::TouchScreenController(ControllerManagerPtr pControllerManager) :
         ControllerBase(pControllerManager)
     {
-        m_ID = DEVICE_TOUCHSCREEN_TOUCH;
+        m_ID = DEVICE_TOUCHSCREEN;
     }
 
     void TouchScreenController::ProcessInputEvent(const char* /*eventID*/, const ssdk::ctls::CtlEvent& /*event*/)

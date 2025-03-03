@@ -32,6 +32,7 @@
 //
 #pragma once
 
+#include "ControllerBase.h"
 #include "transports/transport-common/ClientTransport.h"
 #include "transports/transport-common/Video.h"
 

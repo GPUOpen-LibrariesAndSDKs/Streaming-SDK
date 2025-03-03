@@ -34,8 +34,6 @@ THE SOFTWARE.
 
 */
 
-#if defined(_WIN32)
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -43,10 +41,6 @@ THE SOFTWARE.
 // Windows Header Files
 #include <tchar.h>
 #include <windows.h>
-
-#else
-
-#endif
 
 #include "sdk/video/VideoDispatcher.h"
 
@@ -98,7 +92,7 @@ public:
 
     static SimpleStreamingClient* GetInstance();
 
-    virtual bool Init();
+    virtual bool Init(int argc, const char** argv);
     virtual bool Terminate();
 
     virtual void ResizePresenter(uint32_t width, uint32_t height);

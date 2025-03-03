@@ -1,71 +1,62 @@
-cmake_minimum_required(VERSION 3.15)
+# cmake_minimum_required(VERSION 3.15)
 
 # Define the project name
-project(Controllers)
+# project(Controllers)
+if(WIN32)
 
 # Define source files
 set(SOURCE_FILES
     ${SOURCE_FILES}
-    ${SUBFOLDER_CONTROLLERS}/client/ControllerBase.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/KeyboardController.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/GameControllerLnx.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/KeyboardControllerLnx.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/MouseControllerLnx.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/X11TouchController.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/tbls/WindowsToX11KeyTable.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/tbls/X11ToWindowsScanCodeTable.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/MouseController.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/MouseCursor.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/win/MouseCursorWin.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/MouseCursorLnx.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/TouchEvent.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/TrackedHeadset.cpp
-    ${SUBFOLDER_CONTROLLERS}/UserInput.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/win/GameControllerWin.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/win/KeyboardControllerWin.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/win/MouseControllerWin.cpp
-    ${SUBFOLDER_CONTROLLERS}/client/ControllerManager.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/MouseControllerSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/KeyboardControllerSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/GameControllerSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/TouchScreenControllerSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/win/MouseControllerWinSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/win/KeyboardControllerWinSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/win/GameControllerWinSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/win/TouchScreenControllerWinSvr.cpp
-    ${SUBFOLDER_CONTROLLERS}/server/ControllerManagerSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TouchEvent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/UserInput.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/ControllerBase.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/MouseController.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/MouseCursor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/KeyboardController.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/TrackedHeadset.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/ControllerManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/MouseControllerSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/KeyboardControllerSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/GameControllerSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/TouchScreenControllerSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/ControllerManagerSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/win/MouseControllerWin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/win/MouseCursorWin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/win/KeyboardControllerWin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/win/GameControllerWin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/MouseControllerWinSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/KeyboardControllerWinSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/GameControllerWinSvr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/TouchScreenControllerWinSvr.cpp
     PARENT_SCOPE
 )
 
 # Define header files
 set(HEADER_FILES
     ${HEADER_FILES}
-    ${SUBFOLDER_CONTROLLERS}/ControllerTypes.h
-    ${SUBFOLDER_CONTROLLERS}/client/ControllerBase.h
-    ${SUBFOLDER_CONTROLLERS}/client/GameController.h
-    ${SUBFOLDER_CONTROLLERS}/client/KeyboardController.h
-    ${SUBFOLDER_CONTROLLERS}/client/MouseController.h
-    ${SUBFOLDER_CONTROLLERS}/client/MouseCursor.h
-    ${SUBFOLDER_CONTROLLERS}/client/win/MouseCursorWin.h
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/MouseCursorLnx.h
-    ${SUBFOLDER_CONTROLLERS}/client/TouchEvent.h
-    ${SUBFOLDER_CONTROLLERS}/client/TrackedHeadset.h
-    ${SUBFOLDER_CONTROLLERS}/UserInput.h
-    ${SUBFOLDER_CONTROLLERS}/client/win/GameControllerWin.h
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/GameControllerLnx.h
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/X11TouchController.h
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/tbls/WindowsToX11KeyTable.h
-    ${SUBFOLDER_CONTROLLERS}/client/lnx/tbls/X11ToWindowsScanCodeTable.h
-    ${SUBFOLDER_CONTROLLERS}/client/ControllerManager.h
-    ${SUBFOLDER_CONTROLLERS}/server/ControllerBaseSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/MouseControllerSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/KeyboardControllerSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/GameControllerSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/TouchScreenControllerSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/win/MouseControllerWinSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/win/KeyboardControllerWinSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/win/GameControllerWinSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/win/TouchScreenControllerWinSvr.h
-    ${SUBFOLDER_CONTROLLERS}/server/ControllerManagerSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/TouchEvent.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/UserInput.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ControllerTypes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/ControllerBase.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/MouseController.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/MouseCursor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/KeyboardController.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/GameController.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/TrackedHeadset.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/ControllerManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/ControllerBaseSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/MouseControllerSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/KeyboardControllerSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/GameControllerSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/TouchScreenControllerSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/ControllerManagerSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/win/MouseCursorWin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/client/win/GameControllerWin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/MouseControllerWinSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/KeyboardControllerWinSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/GameControllerWinSvr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/win/TouchScreenControllerWinSvr.h
     PARENT_SCOPE
 )
+
+endif()
