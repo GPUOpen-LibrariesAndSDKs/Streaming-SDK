@@ -603,7 +603,6 @@ void AVStreamer::CaptureVideo()
     {
         amf::AMFSurfacePtr frame(capturedData);
         m_TimestampCalibrator.SubmitVideo(frame);   //  This synchronizes low latency video timestamp to audio. See notes in sdk/util/pipeline/TimestampCalibrator.h for detailed explanations
-        amf::AMFLock    lock(&m_Guard);
         m_VideoOutput->SubmitInput(frame, lastOriginPts, timeOfLastOriginPts);
     }
 }
@@ -615,7 +614,6 @@ void AVStreamer::CaptureAudio()
     {
         amf::AMFAudioBufferPtr buffer(capturedData);
         m_TimestampCalibrator.SubmitAudio(buffer);
-        amf::AMFLock    lock(&m_Guard);
         m_AudioOutput->SubmitInput(buffer);
     }
 }

@@ -858,7 +858,6 @@ namespace ssdk::transport_amd
         // Find subscriber and send video data to client
         Result result = Result::FAIL;
         Subscriber::Ptr pSubscriber = FindSubscriber(m_Sessions[session]);
-        amf::AMFLock lock(&m_Guard);
         if (pSubscriber != nullptr)
         {
             result = pSubscriber->TransmitMessage(Channel::VIDEO_OUT, bufToSend.GetData(), bufToSend.GetSize());
@@ -1545,24 +1544,28 @@ namespace ssdk::transport_amd
     //-------------------------------------------------------------------------------------------------
     bool ServerTransportImpl::DeleteSubscriber(Session* session, TerminationReason reason)
     {
-        amf::AMFLock lock(&m_Guard);
-
-        Subscribers::iterator it = m_Subscribers.find(session);
-        if (it != m_Subscribers.end())
+        ConnectionManagerCallback* pCMCallback = nullptr;
+        SessionHandle hSession = session->GetSessionHandle();
+        bool result = false;
         {
-            Subscriber::Ptr pSubscriber = it->second;
-            m_Subscribers.erase(it);
+            amf::AMFLock lock(&m_Guard);
 
-            ConnectionManagerCallback* pCMCallback = m_InitParams.GetConnectionManagerCallback();
-            SessionHandle hSession = session->GetSessionHandle();
-            if (pCMCallback != nullptr)
+            Subscribers::iterator it = m_Subscribers.find(session);
+            if (it != m_Subscribers.end())
             {
-                pCMCallback->OnClientDisconnected(hSession, reason == TerminationReason::DISCONNECT ? ConnectionManagerCallback::DisconnectReason::CLIENT_DISCONNECTED : ConnectionManagerCallback::DisconnectReason::TIMEOUT);
+                Subscriber::Ptr pSubscriber = it->second;
+                m_Subscribers.erase(it);
+
+                pCMCallback = m_InitParams.GetConnectionManagerCallback();
+                result = true;
             }
-            return true;
+        }
+        if (pCMCallback != nullptr)
+        {
+            pCMCallback->OnClientDisconnected(hSession, reason == TerminationReason::DISCONNECT ? ConnectionManagerCallback::DisconnectReason::CLIENT_DISCONNECTED : ConnectionManagerCallback::DisconnectReason::TIMEOUT);
         }
 
-        return false;
+        return result;
     }
 
     ssdk::util::AESPSKCipher::Ptr ServerTransportImpl::FindCipherForSession(SessionHandle session)

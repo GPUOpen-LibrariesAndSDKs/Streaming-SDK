@@ -52,7 +52,7 @@ namespace ssdk::ctls
     {
         amf::AMFLock lock(&m_cs);
 
-        if (m_pCursor == nullptr || m_bShowCursor == false)
+        if (m_pCursor == nullptr)
         {
             return;
         }
@@ -183,7 +183,7 @@ namespace ssdk::ctls
 
         if (bShownOld != bShownNew)
         {
-            if (m_pCursor == nullptr || m_bShowCursor == false)
+            if (m_pCursor == nullptr)
             {
                 ::PostMessage(HWND(m_hWindow), WM_USER_SHOW_CURSOR, 0, FALSE);
             }
@@ -198,6 +198,8 @@ namespace ssdk::ctls
     void MouseCursorWin::OnCursorHidden()
     {
         ::PostMessage(HWND(m_hWindow), WM_USER_SHOW_CURSOR, 0, FALSE);
+        amf::AMFLock lock(&m_cs);
+        m_pCursor = nullptr;
     }
 
     //-------------------------------------------------------------------------------------------------

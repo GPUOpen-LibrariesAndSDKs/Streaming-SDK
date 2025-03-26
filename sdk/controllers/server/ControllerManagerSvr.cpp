@@ -244,6 +244,7 @@ namespace ssdk::ctls::svr
 
     void ControllerManager::OnConnectionEstablished()
     {
+        amf::AMFLock lock(&m_Guard);
         for (std::vector<ControllerBase::Ptr>::iterator it = m_Controllers.begin(); it != m_Controllers.end(); it++)
         {
             (*it)->OnConnectionEstablished();
@@ -252,6 +253,7 @@ namespace ssdk::ctls::svr
 
     void ControllerManager::OnConnectionTerminated()
     {
+        amf::AMFLock lock(&m_Guard);
         for (std::vector<ControllerBase::Ptr>::iterator it = m_Controllers.begin(); it != m_Controllers.end(); it++)
         {
             (*it)->OnConnectionTerminated();
@@ -260,6 +262,7 @@ namespace ssdk::ctls::svr
 
     void ControllerManager::Update()
     {
+        amf::AMFLock lock(&m_Guard);
         for (std::vector<ControllerBase::Ptr>::iterator it = m_Controllers.begin(); it != m_Controllers.end(); it++)
         {
             (*it)->Update();
