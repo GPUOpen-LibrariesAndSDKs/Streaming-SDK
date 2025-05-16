@@ -111,7 +111,7 @@ namespace ssdk::util
         ssdk::transport_common::ClientTransport* m_Transport = nullptr;
         
         typedef ssdk::util::ValueAverage<float> FloatValueAverage;
-        FloatValueAverage m_FramerateHistory;
+        FloatValueAverage m_FrameDurationHistory;
         FloatValueAverage m_FullLatencyHistory;
         FloatValueAverage m_ClientLatencyHistory;
         FloatValueAverage m_ServerLatencyHistory;

@@ -222,7 +222,12 @@ namespace ssdk::video
             amf::AMFLock lock(&m_Guard);
             m_Bitrate = bitrate;
         }
-        return m_Encoder->UpdateBitrate(bitrate);
+        AMF_RESULT result = m_Encoder->UpdateBitrate(bitrate);
+        if (result != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to set video encoder bitrate rate to %lld", bitrate);
+        }
+        return result;
     }
 
     float MonoscopicVideoOutput::GetFramerate() const noexcept
@@ -237,7 +242,12 @@ namespace ssdk::video
             amf::AMFLock lock(&m_Guard);
             m_FrameRate = framerate;
         }
-        return m_Encoder->UpdateFramerate(AMFConstructRate(uint32_t(framerate), 1));
+        AMF_RESULT result = m_Encoder->UpdateFramerate(AMFConstructRate(uint32_t(framerate), 1));
+        if (result != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to set video encoder frame rate to %5.2f", framerate);
+        }
+        return result;
     }
 
     bool MonoscopicVideoOutput::IsKeyFrameRequested() noexcept
@@ -302,6 +312,26 @@ namespace ssdk::video
             }
             converter = m_Converter;    //  Also saving a pointer to the converter in a local variable to avoid unnecessary locking, only using locals below.
                                         //  The encoder is always present because it's passed to a constructor, so no need to worry about it changing on the fly
+
+            //  Adjust the frame rate setting on the encoder to reflect the actual measured frame rate when frames are captured as Present or ASAP
+            amf_pts now = amf_high_precision_clock();
+            if (m_FrameCnt == 0)
+            {
+                m_FrameCntStartTime = now;
+            }
+            ++m_FrameCnt;
+            constexpr static amf_pts FPS_MEASUREMENT_PERIOD = 3;
+            amf_pts timeSinceHistoryStart = now - m_FrameCntStartTime;
+            if (timeSinceHistoryStart > FPS_MEASUREMENT_PERIOD * AMF_SECOND)
+            {
+                AMFRate fps = { uint32_t(m_FrameCnt / (timeSinceHistoryStart / AMF_SECOND)), 1 };
+                float prevFps = m_Encoder->GetFramerate();
+                if (abs(fps.num - prevFps) > prevFps * 0.1) //  We don't want to change the encoder's frame rate too frequently by a small amount because it can reduce image quality, but when the frame changes significantly, we want to reflect that for a more optimal compression
+                {
+                    m_Encoder->UpdateFramerate(fps);
+                }
+                m_FrameCnt = 0;
+            }
         }
 
         input->SetProperty(ORIGIN_PTS_PROPERTY, originPts);

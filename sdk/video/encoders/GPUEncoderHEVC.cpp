@@ -163,7 +163,12 @@ namespace ssdk::video
     AMF_RESULT GPUEncoderHEVC::UpdateFramerate(const AMFRate& rate)
     {
         AMF_RETURN_IF_FALSE(m_Encoder != nullptr, AMF_FAIL, L"Encoder is not initialized");
-        return m_Encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, rate);
+        AMF_RESULT result =  m_Encoder->SetProperty(AMF_VIDEO_ENCODER_HEVC_FRAMERATE, rate);
+        if (result == AMF_OK)
+        {
+            m_Framerate = float(rate.num) / float(rate.den);
+        }
+        return result;
     }
 
     AMF_RESULT GPUEncoderHEVC::GetExtraData(amf::AMFBuffer** pExtraData) const

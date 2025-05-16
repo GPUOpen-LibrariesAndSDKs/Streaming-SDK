@@ -4,6 +4,8 @@ Advanced Interactive Streaming SDK is a C++ library that provides building block
 Virtual and Augmented Reality, etc. using AMD Radeon graphics. It allows you to build a complete streaming solution including video and audio capture, video and audio encoder/decoder/pre-post-processing pipelines, a robust and secure network stack, or use some of its components, while implementing the rest yourself.
 
 ## Changelog:
+- v1.0.2 - bug fixes:
+	- Encoder frame rate wasn't being set correctly when display capture mode was set to *present* or when QoS was turned off
 - v1.0.1 - bug fixes:
 	- System mouse cursor doesn't get hidden correctly in some games
 	- Deadlock on server exit when streaming at high (8K) resolution

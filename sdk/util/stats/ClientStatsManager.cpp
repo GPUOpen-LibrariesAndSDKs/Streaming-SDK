@@ -59,7 +59,7 @@ namespace ssdk::util
 
     void ClientStatsManager::Clear()
     {
-        m_FramerateHistory.Clear();
+        m_FrameDurationHistory.Clear();
         m_FullLatencyHistory.Clear();
         m_ClientLatencyHistory.Clear();
         m_ServerLatencyHistory.Clear();
@@ -97,9 +97,9 @@ namespace ssdk::util
     void ClientStatsManager::UpdateFullLatencyAndFramerate(amf_pts fullLatencyPts)
     {
         amf_pts now = amf_high_precision_clock();
-        float framerate = (float)AMF_SECOND / (now - m_LastFrameTime);
+        float frameDuration = (float)(now - m_LastFrameTime) / AMF_SECOND;
         m_LastFrameTime = now;
-        m_FramerateHistory.Add(framerate);
+        m_FrameDurationHistory.Add(frameDuration);
         float fullLatency = (float)(fullLatencyPts) / AMF_MILLISECOND;
         m_FullLatencyHistory.Add(fullLatency);
     }
@@ -155,7 +155,12 @@ namespace ssdk::util
                 float decrypt = m_DecryptHistory.GetAverageAndClear();
                 int32_t decoderQueueSize = static_cast<int32_t>(m_DecoderQueueTimes.size());
                 float AVDesync = m_AVDesyncHistory.GetAverageAndClear();
-                float framerate = m_FramerateHistory.GetAverageAndClear();
+                float frameDurationAvg = m_FrameDurationHistory.GetAverageAndClear();
+                float framerate = 0;
+                if (frameDurationAvg != 0)
+                {
+                    framerate = 1 / frameDurationAvg;
+                }
 
                 StatsSnapshotImpl statsSnapshotImpl(fullLatency, clientLatency, serverLatency, encoderLatency, networkLatency, decoderLatency, decrypt, decoderQueueSize, AVDesync, framerate);
                 transport->SendStats(ssdk::transport_common::DEFAULT_STREAM, statsSnapshotImpl);

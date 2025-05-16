@@ -482,7 +482,7 @@ bool RemoteDesktopServer::InitVideoCapture()
                 break;
             case AMF_NOT_FOUND:
             case AMF_ACCESS_DENIED:
-                AMFTraceWarning(AMF_FACILITY, L"Selected video capture method does not support capture at a fixed frame rate, -%s %S ignored", PARAM_NAME_CAPTURE_MODE, CAPTURE_MODE_FRAMERATE);
+                AMFTraceWarning(AMF_FACILITY, L"Selected video capture method does not support capture at a fixed frame rate, -%s %s ignored", PARAM_NAME_CAPTURE_MODE, CAPTURE_MODE_FRAMERATE);
                 result = true;
                 break;
             default:
@@ -493,20 +493,22 @@ bool RemoteDesktopServer::InitVideoCapture()
         else if (captureMode == CAPTURE_MODE_PRESENT)
         {
             amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_WAIT_FOR_PRESENT));
+            m_VideoStreamDescriptor.SetFramerate(60.0); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
         }
         else if (captureMode == CAPTURE_MODE_ASAP)
         {
             amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_GET_CURRENT_SURFACE));
+            m_VideoStreamDescriptor.SetFramerate(60.0); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
         }
         if (result != true)
         {
             if (amfResult == AMF_OK)
             {
-                AMFTraceInfo(AMF_FACILITY, L"Capture mode is set to %S", captureMode.c_str());
+                AMFTraceInfo(AMF_FACILITY, L"Capture mode is set to %s", captureMode.c_str());
             }
             else
             {
-                AMFTraceError(AMF_FACILITY, L"Failed to set video capture mode to %S, result=%s", captureMode.c_str(), amf::AMFGetResultText(amfResult));
+                AMFTraceError(AMF_FACILITY, L"Failed to set video capture mode to %s, result=%s", captureMode.c_str(), amf::AMFGetResultText(amfResult));
             }
         }
 

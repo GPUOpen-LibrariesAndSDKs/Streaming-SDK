@@ -146,5 +146,8 @@ namespace ssdk::video
 
         int64_t                     m_SequenceNumber = 0;
         int64_t                     m_FramesSubmitted = 0;
+
+        amf_pts                     m_FrameCntStartTime = 0;
+        uint32_t                    m_FrameCnt = 0;
     };
 }

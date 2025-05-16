@@ -464,16 +464,6 @@ void AVStreamer::OnFramerateChangeByQoS(float framerate, ssdk::transport_common:
         {
             AMFTraceError(AMF_FACILITY, L"QoS failed to set video capture frame rate for stream %lld to %5.2f, result=%s", streamID, framerate, amf::AMFGetResultText(result));
         }
-
-        result = videoOutput->SetFramerate(framerate);
-        if (result == AMF_OK)
-        {
-            AMFTraceDebug(AMF_FACILITY, L"Encoder frame rate for stream %lld has been changed to %5.2f by QoS", streamID, framerate);
-        }
-        else
-        {
-            AMFTraceError(AMF_FACILITY, L"QoS failed to set encoder frame rate for stream %lld to %5.2f, result=%s", streamID, framerate, amf::AMFGetResultText(result));
-        }
     }
 }
 
