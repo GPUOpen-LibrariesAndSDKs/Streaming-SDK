@@ -37,9 +37,24 @@
 #include "../ControllerTypes.h"
 #include "../UserInput.h"
 
+#if defined(_WIN32)
 #include <xinput.h>
 typedef MSG WindowMessage;
 typedef POINT WindowPoint;
+#elif defined(__linux__) && !defined(__ANDROID__)
+#include <X11/Xlib.h>
+#include <X11/extensions/XI2.h>
+#include <X11/extensions/XInput2.h>
+#include <X11/XKBlib.h>
+#include <X11/keysym.h>
+#include <libevdev-1.0/libevdev/libevdev.h>
+typedef XEvent WindowMessage;
+typedef XIDeviceEvent ExtWindowMessage;
+typedef struct {
+    int x;
+    int y;
+} WindowPoint;
+#endif
 
 namespace ssdk::ctls
 {
@@ -83,6 +98,9 @@ namespace ssdk::ctls
 
         // ControllerBase interface
         virtual AMF_RESULT  AMF_STD_CALL ProcessMessage(const WindowMessage& /*msg*/) { return AMF_FAIL; }
+#if !defined(_WIN32)
+        virtual AMF_RESULT  AMF_STD_CALL ProcessMessageExt(const ExtWindowMessage& /*msg*/) { return AMF_FAIL; }
+#endif
         virtual void        AMF_STD_CALL ProcessInputEvent(const char* /*eventID*/, const amf::AMFVariant& /*event*/) {};
         virtual void        AMF_STD_CALL OnConnectionEstablished() {};
         virtual void        AMF_STD_CALL OnConnectionTerminated() {};

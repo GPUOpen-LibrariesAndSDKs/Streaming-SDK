@@ -5,3 +5,4 @@
 	path = amf
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git
 	ignore = untracked
+	branch = master

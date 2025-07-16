@@ -67,6 +67,5 @@ private:
     HWND            m_hWnd = NULL;
     std::wstring    m_CmdLine;
     bool            m_DX11Initialized = false;
-    DeviceDX11      m_Device;
 };
 #endif

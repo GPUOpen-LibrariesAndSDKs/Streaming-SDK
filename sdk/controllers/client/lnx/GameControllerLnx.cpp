@@ -38,6 +38,7 @@
 
 namespace ssdk::ctls
 {
+    static constexpr const wchar_t* const AMF_FACILITY = L"GameControllerLnx";
     //-------------------------------------------------------------------------------------------------
     GameController::GameController(ControllerManagerPtr pControllerManager, libevdev* dev, uint32_t index, CONNECTION_TYPE connection) :
         ControllerBase(pControllerManager),
@@ -113,7 +114,7 @@ namespace ssdk::ctls
         {
         case CONNECTION_TYPE::USB:
             m_xAxisShift = 0;
-            m_yAxisShift = 65535;
+            m_yAxisShift = 0;
             m_eventMap[ABS_RY] = ABS_RZ;
             m_eventMap[ABS_RX] = ABS_Z;
             m_eventMap[ABS_Z] = ABS_BRAKE;
@@ -274,7 +275,7 @@ namespace ssdk::ctls
                     id = m_ID;
                     id += DEVICE_CTRL_TRIGGER_RIGHT_VALUE;
                     ev.value.type = amf::AMF_VARIANT_FLOAT;
-                    ev.value.floatValue = event.value / 1023.f;
+                    ev.value.floatValue = event.value / 255.f;
                     FireEvent(id.c_str(), &ev);
                     break;
                 }
@@ -283,7 +284,7 @@ namespace ssdk::ctls
                     id = m_ID;
                     id += DEVICE_CTRL_TRIGGER_LEFT_VALUE;
                     ev.value.type = amf::AMF_VARIANT_FLOAT;
-                    ev.value.floatValue = event.value / 1023.f;
+                    ev.value.floatValue = event.value / 255.f;
                     FireEvent(id.c_str(), &ev);
                     break;
                 }
@@ -447,8 +448,14 @@ namespace ssdk::ctls
                 rumble_effect.code = effect.id;
                 rumble_effect.value = 1;
 
-                write(fd, (const void*)&rumble_effect, sizeof(rumble_effect));
-                m_rumble_effect = rumble_effect.code;
+                if (write(fd, (const void*)&rumble_effect, sizeof(rumble_effect)) != -1)
+                {
+                    m_rumble_effect = rumble_effect.code;
+                }
+                else
+                {
+                    AMFTraceError(AMF_FACILITY, L"ProcessInputEvent: Failed to write event");
+                }
             }
         }
     }

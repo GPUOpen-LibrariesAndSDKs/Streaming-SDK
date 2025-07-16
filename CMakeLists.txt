@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.15)
 # Define the project name
 project(StreamingSDK)
 
-if(WIN32)
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -27,26 +26,31 @@ if(MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG /INCREMENTAL:NO /OPT:REF /OPT:ICF /NOLOGO")
     set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG /NOLOGO")
 
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register -Werror -Wall -Wextra -Wno-unknown-pragmas -Wno-reorder -Wno-unused -Wno-switch -Wno-sign-compare -Wno-missing-field-initializers -Wno-nonnull -Wno-overloaded-virtual -Wno-deprecated-declarations -Wno-type-limits -Wno-free-nonheap-object -Wno-maybe-uninitialized")
 endif()
 
-set(PROGRAM_FILES_X86 "$ENV{ProgramFiles\(x86\)}")
-set(WINDOWS_SDK_VERSION "10.0.26100.0")
-set(WINDOWS_SDK_INCLUDE_BASE "${PROGRAM_FILES_X86}/Windows Kits/10/Include/${WINDOWS_SDK_VERSION}")
-set(WINDOWS_SDK_INCLUDE
-    "${WINDOWS_SDK_INCLUDE_BASE}/ucrt"
-    "${WINDOWS_SDK_INCLUDE_BASE}/um"
-    "${WINDOWS_SDK_INCLUDE_BASE}/shared"
-    "${WINDOWS_SDK_INCLUDE_BASE}/winrt"
-    "${WINDOWS_SDK_INCLUDE_BASE}/cppwinrt"
-    "${WINDOWS_SDK_INCLUDE_BASE}/um"
-    )
-set(WINDOWS_SDK_BIN "${PROGRAM_FILES_X86}/Windows Kits/10/bin/${WINDOWS_SDK_VERSION}/x64")
-set(OCL_ROOT "$ENV{OCL_ROOT}")
-set(VK_SDK_PATH "$ENV{VK_SDK_PATH}")
-include_directories(${WINDOWS_SDK_INCLUDE} $ENV{VK_SDK_PATH}/include)
-include_directories(${OCL_ROOT}/include)
+if(WIN32)
+    set(PROGRAM_FILES_X86 "$ENV{ProgramFiles\(x86\)}")
+    set(WINDOWS_SDK_VERSION "10.0.26100.0")
+    set(WINDOWS_SDK_INCLUDE_BASE "${PROGRAM_FILES_X86}/Windows Kits/10/Include/${WINDOWS_SDK_VERSION}")
+    set(WINDOWS_SDK_INCLUDE
+        "${WINDOWS_SDK_INCLUDE_BASE}/ucrt"
+        "${WINDOWS_SDK_INCLUDE_BASE}/um"
+        "${WINDOWS_SDK_INCLUDE_BASE}/shared"
+        "${WINDOWS_SDK_INCLUDE_BASE}/winrt"
+        "${WINDOWS_SDK_INCLUDE_BASE}/cppwinrt"
+        "${WINDOWS_SDK_INCLUDE_BASE}/um"
+        )
+    set(WINDOWS_SDK_BIN "${PROGRAM_FILES_X86}/Windows Kits/10/bin/${WINDOWS_SDK_VERSION}/x64")
+    set(OCL_ROOT "$ENV{OCL_ROOT}")
+    include_directories(${WINDOWS_SDK_INCLUDE})
+    include_directories(${OCL_ROOT}/include)
+endif()
+
+set(VK_SDK_PATH "$ENV{VULKAN_SDK}")
+include_directories(${VK_SDK_PATH}/include)
+
 
 # Set output directories for all build configurations
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/bin/Debug")
@@ -103,4 +107,3 @@ set_target_properties(ssdk PROPERTIES FOLDER "libs")
 set_target_properties(mbedtls-custom PROPERTIES FOLDER "libs")
 set_target_properties(SimpleStreamingClient PROPERTIES FOLDER "samples")
 set_target_properties(RemoteDesktopServer PROPERTIES FOLDER "samples")
-endif()

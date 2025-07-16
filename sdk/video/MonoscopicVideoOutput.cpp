@@ -64,14 +64,14 @@ namespace ssdk::video
         m_Context = nullptr;    //  Context should be the last thing to be released
     }
 
-    AMF_RESULT MonoscopicVideoOutput::Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& inputResolution, const AMFSize& streamResolution, int64_t bitrate, float frameRate, bool hdr, bool preserveAspectRatio, int64_t intraRefreshPeriod)
+    AMF_RESULT MonoscopicVideoOutput::Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& inputResolution, const AMFSize& streamResolution, int64_t bitrate, float frameRate, bool hdr, bool preserveAspectRatio, int64_t intraRefreshPeriod, bool forceEFCOff)
     {
         AMF_RESULT result = AMF_OK;
         amf::AMFLock lock(&m_Guard);
         if (m_Initialized == false)
         {
-            m_NeedsCSC = (inputResolution != streamResolution) || (hdr == true && m_Encoder->IsHDRSupported() == false) || m_Encoder->GetSupportedColorRange() == AMF_COLOR_RANGE_ENUM::AMF_COLOR_RANGE_STUDIO;
-
+            m_NeedsCSC = (inputResolution != streamResolution) || (hdr == true && m_Encoder->IsHDRSupported() == false) || m_Encoder->GetSupportedColorRange() == AMF_COLOR_RANGE_ENUM::AMF_COLOR_RANGE_STUDIO || forceEFCOff == true;
+            m_ForceEFCOff = forceEFCOff;
             ColorParameters encoderInputColorParams;
             DetermineEncoderInputColorParams(nullptr, m_NeedsCSC, hdr, encoderInputColorParams);
             if ((result = InitializeEncoder(streamResolution, bitrate, frameRate, encoderInputColorParams, intraRefreshPeriod)) != AMF_OK)
@@ -287,6 +287,7 @@ namespace ssdk::video
 
                 //  VideoConverter is required when:
                 needsCSC = (inputResolution != m_StreamResolution) ||      //  scaling is required
+                    m_ForceEFCOff == true ||    //  EFC is forced off by initialization parameters
                     (m_HDR == true && m_Encoder->IsHDRSupported() == false) ||  //  we're asking for HDR support, but the codec does not support it
                     m_Encoder->IsFormatSupported(m_HDR == true ? m_Encoder->GetPreferredHDRFormat() : m_Encoder->GetPreferredSDRFormat(), m_HDR, input) == false || //  when the encoder cannot accept the input format directly
                     bDCC == true ||   //  when DCC is enabled

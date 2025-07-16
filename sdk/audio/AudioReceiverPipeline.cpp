@@ -42,6 +42,12 @@
 
 static constexpr const wchar_t* const AMF_FACILITY = L"AudioPipeline";
 
+#if defined(_WIN32)
+    #define FFMPEG_HELPER_DLL_NAME    FFMPEG_DLL_NAME
+#elif defined(__linux)
+    #define FFMPEG_HELPER_DLL_NAME    L"libamf-component-ffmpeg64.so"
+#endif
+
 namespace ssdk::audio
 {
     AudioReceiverPipeline::AudioReceiverPipeline(amf::AMFContext* context, AudioPresenterPtr presenter, ssdk::util::AVSynchronizer::Ptr avSynchronizer) :
@@ -101,7 +107,7 @@ namespace ssdk::audio
     AMF_RESULT AudioReceiverPipeline::InitConverter()
     {
         amf::AMFComponentPtr converter;
-        AMF_RESULT result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &converter);
+        AMF_RESULT result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &converter);
         AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed", FFMPEG_AUDIO_CONVERTER);
 
         //  Configure converter input

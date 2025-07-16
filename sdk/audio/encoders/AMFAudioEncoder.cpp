@@ -38,6 +38,12 @@
 
 static constexpr const wchar_t* const AMF_FACILITY = L"ssdk::audio::AMFAudioEncoder";
 
+#if defined(_WIN32)
+    #define FFMPEG_HELPER_DLL_NAME    FFMPEG_DLL_NAME
+#elif defined(__linux)
+    #define FFMPEG_HELPER_DLL_NAME    L"libamf-component-ffmpeg64.so"
+#endif
+
 namespace ssdk::audio
 {
     AMFAudioEncoder::AMFAudioEncoder(amf::AMFContext* context, int codecID) :
@@ -63,7 +69,7 @@ namespace ssdk::audio
         AMF_RETURN_IF_FAILED(result, L"AMFAudioEncoder::Init(): audio encoder failed to initialize, result=%s", amf::AMFGetResultText(result));
 
         amf::AMFComponentPtr encoder;
-        result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_ENCODER, &encoder);
+        result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_ENCODER, &encoder);
         AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed", FFMPEG_AUDIO_ENCODER);
 
         result = encoder->SetProperty(AUDIO_ENCODER_AUDIO_CODEC_ID, amf_int64(m_CodecID));

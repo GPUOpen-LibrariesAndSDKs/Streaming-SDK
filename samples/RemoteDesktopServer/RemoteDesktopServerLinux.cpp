@@ -37,51 +37,83 @@
 
 #include "amf/public/include/components/DisplayCapture.h"
 #include "amf/public/src/components/CursorCapture/CursorCaptureLinux.h"
-//#include "controllers/svr/lnx/MouseControllerLnxSvr.h"
-//#include "controllers/svr/lnx/KeyboardControllerLnxSvr.h"
-//#include "controllers/svr/lnx/GameControllerLnxSvr.h"
+#include "controllers/server/lnx/MouseControllerLnxSvr.h"
+#include "controllers/server/lnx/KeyboardControllerLnxSvr.h"
+#include "controllers/server/lnx/GameControllerLnxSvr.h"
+#include "controllers/server/lnx/TouchScreenControllerLnxSvr.h"
 
 #include "amf/public/common/TraceAdapter.h"
 
 #include <iostream>
 #include <sys/stat.h>
+#include <filesystem>
+#include <fcntl.h>
 
 static constexpr const wchar_t* const AMF_FACILITY = L"RemoteDesktopServerLinux";
 
 static constexpr const wchar_t* PARAM_NAME_INTERACTIVE = L"interactive";
 
 // Game controllers max count
-static constexpr const int8_t  GAME_USER_MAX_COUNT = 4;
+static constexpr const int8_t  GAME_USER_MAX_COUNT = 1;
 
 static bool RedirectIOToConsole()
 {
-    FILE* fpResult = freopen("CONIN$", "r", stdin);
-    if (fpResult != stdin)
+    bool result = true;
+    // Check if the standard input/output streams are already connected to a terminal. If not, then open a new terminal or pseudo-terminal
+    if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO))
     {
-        AMFTraceError(AMF_FACILITY, L"Failed to reopen stdin, errno = %d", errno);
+        // Open a new or pseudo-terminal. Opens the terminal for both reading and writing
+        // /dev/tty: opens the controlling terminal of the current process, assumes that /dev/tty is accessible
+        int fd = open("/dev/tty", O_RDWR);
+        if (fd == -1)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to open /dev/tty");
+            result = false;
+        }
+        // Redirect stdin, stdout, and stderr to the pseudo-terminal
+        else if (dup2(fd, STDIN_FILENO) == -1)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to redirect stdin");
+            result = false;
+        }
+        else if (dup2(fd, STDOUT_FILENO) == -1)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to redirect stdout");
+            result = false;
+        }
+        else if (dup2(fd, STDERR_FILENO) == -1)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to redirect stderr");
+            result = false;
+        }
+
+        close(fd);
+    }
+    return result;
+
+    /*// Command to open a new terminal emulator and run the application
+    const char* terminalCommand = "xterm -e bash -c './RemoteDesktopServer; exec bash' &"; // Replace xterm with your preferred terminal emulator if needed
+
+    // Execute the command to open a new terminal window
+    int result = std::system(terminalCommand);
+    if (result == -1)
+    {
+        AMFTraceError(AMF_FACILITY, L"Failed to open a new terminal window");
         return false;
     }
 
-    fpResult = freopen("CONOUT$", "w", stdout);
-    if (fpResult != stdout)
-    {
-        AMFTraceError(AMF_FACILITY, L"Failed to reopen stdout, errno = %d", errno);
-        return false;
-    }
-
-    fpResult = freopen("CONOUT$", "w", stderr);
-    if (fpResult != stderr)
-    {
-        AMFTraceError(AMF_FACILITY, L"Failed to reopen stderr, errno = %d", errno);
-        return false;
-    }
-    return true;
+    return true;*/
 }
 
 
 RemoteDesktopServerLinux::RemoteDesktopServerLinux()
 {
     SetParamDescription(PARAM_NAME_INTERACTIVE, ParamCommon, L"Enable interactive mode (true, false), default=true", ParamConverterBoolean);
+
+    XInitThreads();
+    m_pDisplay = XDisplay::Ptr(new XDisplay);
+
+    InitCrtcInfo();
 }
 
 RemoteDesktopServerLinux::~RemoteDesktopServerLinux()
@@ -122,8 +154,24 @@ void RemoteDesktopServerLinux::OnAppTerminate()
 
 bool RemoteDesktopServerLinux::InitVulkan()
 {
+    AMF_RESULT amfResult = AMF_FAIL;
+    if ((amfResult = m_DeviceVulkan.Init(0, m_Context)) != AMF_OK)
+    {
+        AMFTraceError(AMF_FACILITY, L"Failed to initialize a Vulkan device, result=%s - make sure an AMD GPU is present and the AMD driver is installed", amf::AMFGetResultText(amfResult));
+    }
+    else if (m_Context != nullptr)
+    {
+        if ((amfResult = amf::AMFContext1Ptr(m_Context)->InitVulkan(m_DeviceVulkan.GetDevice())) != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to initialize AMFContext for Vulkan, result=%s", amf::AMFGetResultText(amfResult));
+        }
+        else
+        {
+            m_MemoryType = amf::AMF_MEMORY_TYPE::AMF_MEMORY_VULKAN;
+        }
+    }
 
-    return false;
+    return (amfResult == AMF_OK);
 }
 
 void RemoteDesktopServerLinux::TerminateVulkan()
@@ -135,7 +183,7 @@ void RemoteDesktopServerLinux::TerminateVulkan()
     }
     if (m_MemoryType == amf::AMF_MEMORY_TYPE::AMF_MEMORY_VULKAN)
     {
-        //m_DeviceVulkan.Terminate();
+        m_DeviceVulkan.Terminate();
     }
 }
 
@@ -178,21 +226,17 @@ bool RemoteDesktopServerLinux::RunServer()
 bool RemoteDesktopServerLinux::InitDirectories()
 {
     bool result = false;
-    const char* tmpDir = getenv("TEMP");
+    const char* tmpDir = std::filesystem::temp_directory_path().c_str();
     if (tmpDir == nullptr)
     {
-        tmpDir = getenv("TMP");
-    }
-    if (tmpDir == nullptr)
-    {
-        AMFTraceError(AMF_FACILITY, L"Ensure that either the TEMP or TMP environment is set");
+        AMFTraceError(AMF_FACILITY, L"Couldn't find tmp directory");
     }
     else
     {
         m_ShutdownDir = tmpDir;
-        m_ShutdownDir += "\\RemoteDesktopServer";
+        m_ShutdownDir += "/RemoteDesktopServer";
         result = mkdir(m_ShutdownDir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0 || errno == EEXIST;
-        m_ShutdownDir += '\\';  //  Prepare the final OS-specific path delimiter so that the base class could just append a file name to it.
+        m_ShutdownDir += '/';  //  Prepare the final OS-specific path delimiter so that the base class could just append a file name to it.
         if (result == false)
         {
             AMFTraceError(AMF_FACILITY, L"Ensure that RemoteDesktopServer has write permissions to %S", tmpDir);
@@ -211,17 +255,47 @@ bool RemoteDesktopServerLinux::InitControllers()
     }
 
     // Create Controllers
-    /*m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::MouseControllerLnx(m_pControllerManager)));
-    m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::KeyboardControllerLnx(m_pControllerManager)));
+    m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::MouseControllerLnx(m_pControllerManager, m_pDisplay, m_pCrtcInfo)));
+    m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::KeyboardControllerLnx(m_pControllerManager, m_pDisplay)));
 
     for (int8_t i = 0; i < GAME_USER_MAX_COUNT; i++)
     {
         m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::GameControllerLnx(m_pControllerManager, i)));
-    }*/
+    }
+    
+    m_pControllerManager->AddController(ssdk::ctls::svr::ControllerBase::Ptr(new ssdk::ctls::svr::TouchScreenControllerLnx(m_pControllerManager, m_pDisplay, m_pCrtcInfo)));
 
     AMFTraceDebug(AMF_FACILITY, L"Controller Manager initialized");
 
     return result;
+}
+
+AMF_RESULT RemoteDesktopServerLinux::InitCrtcInfo()
+{
+    AMF_RESULT res = AMF_OK;
+
+    amf::AMFLock lock(&m_sync);
+    if (nullptr == m_pCrtcInfo)
+    {
+        int64_t monitorID = 0;
+        GetParam(PARAM_NAME_MONITOR_ID, monitorID);
+
+        XDisplayPtr display(m_pDisplay);
+        Window root = DefaultRootWindow((Display*)display);
+
+        // Get proper screen dimension by Xrandr api. the indexing in XRRScreenResources->crtcs
+        // is the same as monintorID in screen capture.
+        XRRScreenResourcesPtr screenResource(XRRGetScreenResourcesCurrent(display, root), &XRRFreeScreenResources);
+        AMF_RETURN_IF_FALSE(nullptr != screenResource, AMF_FAIL, L"Cannot get screenResource for current screen.")
+        AMF_RETURN_IF_FALSE(screenResource->ncrtc > monitorID, AMF_FAIL, L"monitorID=%d is out of range. There are only %d crtcs.", monitorID, screenResource->ncrtc);
+
+        // Get CRTC info.
+        XRRCrtcInfoPtr crtcInfo(XRRGetCrtcInfo(display,screenResource.get(), screenResource->crtcs[monitorID]), &XRRFreeCrtcInfo);
+        AMF_RETURN_IF_FALSE(nullptr != crtcInfo, AMF_FAIL, L"Cannot get XRRCrtcInfo from current XRRScreenResource.")
+        m_pCrtcInfo = crtcInfo;
+    }
+
+    return res;
 }
 
 #endif

@@ -3,7 +3,7 @@
 build/*
 out/*
 bin/*
-
+*.spv*
 
 # User-specific files
 *.rsuser

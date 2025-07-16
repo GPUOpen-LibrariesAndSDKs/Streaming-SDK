@@ -37,10 +37,24 @@ THE SOFTWARE.
 #include <memory>
 #include <map>
 #include <set>
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <WS2tcpip.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#ifdef __linux
+#include <sys/un.h>
+#endif
+
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#endif
 
 #include "Url.h"
 #include "Initializer.h"
@@ -61,7 +75,11 @@ namespace ssdk::net
             AMF_INTERFACE_CHAIN_ENTRY(amf::AMFInterfaceImpl<amf::AMFInterface>)
         AMF_END_INTERFACE_MAP
 
+#ifdef _WIN32
         typedef SOCKET Socket_t;
+#else
+        typedef int Socket_t;
+#endif
         typedef std::set<Socket::Ptr>	Set;
 
         enum class Result
@@ -103,6 +121,9 @@ namespace ssdk::net
         enum class AddressFamily
         {
             ADDR_UNSPEC = AF_UNSPEC,
+#if defined(__linux)
+            ADDR_UNIX = AF_UNIX,
+#endif
             ADDR_IP = AF_INET,
             ADDR_IP6 = AF_INET6
         };
@@ -115,6 +136,9 @@ namespace ssdk::net
 
         enum class Protocol
         {
+#if defined(__linux)
+            PROTO_UNIX = 0,
+#endif
             PROTO_TCP = IPPROTO_TCP,
             PROTO_UDP = IPPROTO_UDP
         };
@@ -196,6 +220,10 @@ namespace ssdk::net
             inline void SetAddress(const in_addr& address) { reinterpret_cast<sockaddr_in&>(m_SockAddr).sin_addr = address; }
             void SetAddress(const std::string& address);
 
+#ifdef __linux
+            std::string GetInterfaceName() const;
+#endif
+
             unsigned short GetPort() const;
             void SetIPPort(unsigned short port);
 
@@ -209,6 +237,48 @@ namespace ssdk::net
         private:
             static const wchar_t* const m_Realm;
         };
+
+#if defined(__linux)
+        class UnixDomainAddress :
+            public Address
+        {
+        public:
+            UnixDomainAddress();
+            UnixDomainAddress(const std::string& address);
+            UnixDomainAddress(const UnixDomainAddress& other);
+            UnixDomainAddress(const Address& other);
+            UnixDomainAddress(const sockaddr& other);
+            UnixDomainAddress(const sockaddr_un& other);
+
+            UnixDomainAddress& operator=(const UnixDomainAddress& other);
+            UnixDomainAddress& operator=(const Address& other);
+            UnixDomainAddress& operator=(const sockaddr& other);
+            UnixDomainAddress& operator=(const sockaddr_un& other);
+
+            bool operator==(const sockaddr& other) const;
+            bool operator==(const sockaddr_un& other) const;
+            bool operator==(const Address& other) const;
+            bool operator==(const UnixDomainAddress& other) const;
+
+            inline bool operator!=(const sockaddr& other) const { return !operator==(other); }
+            inline bool operator!=(const sockaddr_un& other) const { return !operator==(other); }
+            inline bool operator!=(const Address& other) const { return !operator==(other); }
+            inline bool operator!=(const UnixDomainAddress& other) const { return !operator==(other); }
+
+            const std::string& GetAddress() const;
+            void SetAddress(const std::string& address);
+
+            virtual std::string GetAddressAsString() const;
+
+            virtual Ptr Duplicate() const { return Ptr(new UnixDomainAddress(*this)); }
+
+            inline const sockaddr_un& ToSockAddr_Un() const { return reinterpret_cast<const sockaddr_un&>(m_SockAddr); }
+            inline sockaddr_un& ToSockAddr_Un() { return reinterpret_cast<sockaddr_un&>(m_SockAddr); }
+
+        private:
+            static const wchar_t* const m_Realm;
+        };
+#endif
 
     protected:
         Socket(AddressFamily addrFamily, Type type, Protocol protocol);

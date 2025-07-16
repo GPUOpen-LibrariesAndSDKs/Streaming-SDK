@@ -75,7 +75,7 @@ static constexpr const wchar_t* PARAM_NAME_MAX_CONNECTIONS = L"Connections";
 static constexpr const wchar_t* PARAM_NAME_ENCRYPTION = L"encrypted";
 static constexpr const wchar_t* PARAM_NAME_PASSPHRASE = L"pass";
 
-static constexpr const wchar_t* PARAM_NAME_MONITOR_ID = L"MonitorID";
+const wchar_t* PARAM_NAME_MONITOR_ID = L"MonitorID";
 static constexpr const wchar_t* PARAM_NAME_CAPTURE_MODE = L"CaptureMode";
 static constexpr const wchar_t* PARAM_NAME_CAPTURE_RATE = L"FrameRate";
 static constexpr const wchar_t* PARAM_NAME_VIDEO_CODEC = L"VideoCodec";
@@ -99,6 +99,7 @@ static constexpr const wchar_t* PARAM_NAME_QOS_MIN_BITRATE = L"QOSMinBitrate";
 static constexpr const wchar_t* CAPTURE_MODE_FRAMERATE = L"FRAMERATE";
 static constexpr const wchar_t* CAPTURE_MODE_PRESENT = L"PRESENT";
 static constexpr const wchar_t* CAPTURE_MODE_ASAP = L"ASAP";
+static constexpr const wchar_t* CAPTURE_FORCE_COPY = L"CAPTURECOPY";
 
 //  Values for PARAM_NAME_PROTOCOL
 static constexpr const wchar_t* PROTOCOL_UDP = L"UDP";
@@ -110,6 +111,7 @@ static constexpr const wchar_t* VIDEO_CODEC_HEVC = L"HEVC";
 static constexpr const wchar_t* VIDEO_CODEC_AVC = L"AVC";
 static constexpr const wchar_t* VIDEO_CODEC_H265 = L"H265";
 static constexpr const wchar_t* VIDEO_CODEC_H264 = L"H264";
+static constexpr const wchar_t* VIDEO_CODEC_EFC_OFF = L"EFCOFF";
 
 //  Values for PARAM_NAME_AUDIO_CODEC
 static constexpr const wchar_t* AUDIO_CODEC_AAC = L"AAC";
@@ -138,10 +140,9 @@ static constexpr int64_t QOS_DEFAULT_THRESHOLD_IDR = 2;
 static constexpr int64_t QOS_DEFAULT_THRESHOLD_IDR_PANIC = 5;
 
 static constexpr int64_t QOS_DEFAULT_MAX_ENCODER_QUEUE_DEPTH = 4;
-static constexpr int64_t QOS_DEFAULT_MAX_DECODER_QUEUE_DEPTH = 2;
+static constexpr int64_t QOS_DEFAULT_MAX_DECODER_QUEUE_DEPTH = 10;
 
 static constexpr int64_t QOS_DEFAULT_FRAMERATE = 60;
-static constexpr int64_t QOS_DEFAULT_FRAMERATE_MIN = 15; 
 static constexpr int64_t QOS_DEFAULT_FRAMERATE_STEP = 5;
 static constexpr int64_t QOS_DEFAULT_FRAMERATE_ADJUSTMENT_PERIOD_SECONDS = 5;
 
@@ -168,11 +169,15 @@ RemoteDesktopServer::RemoteDesktopServer()
     SetParamDescription(PARAM_NAME_MONITOR_ID, ParamCommon, L"Specify a 0-based index of the monitor to capture video from, default = 0", ParamConverterInt64);
     SetParamDescription(PARAM_NAME_CAPTURE_MODE, ParamCommon, L"Specify capture mode: [framerate, present, asap], default = framerate", nullptr);
     SetParamDescription(PARAM_NAME_CAPTURE_RATE, ParamCommon, L"Specify capture frame rate for the \"framerate\" capture mode, default = 60", ParamConverterInt64);
+    SetParamDescription(CAPTURE_FORCE_COPY, ParamCommon, L"Force display capture to make a copy of the captured surface (true, false), default = false", ParamConverterBoolean);
+
     SetParamDescription(PARAM_NAME_RESOLUTION, ParamCommon, L"Encoded stream resolution, (w,h) default = 1920,1080", ParamConverterSize);
     SetParamDescription(PARAM_NAME_VIDEO_CODEC, ParamCommon, L"Specify video codec: [av1, hevc, avc], default = hevc", nullptr);
     SetParamDescription(PARAM_NAME_VIDEO_BITRATE, ParamCommon, L"Video bitrate in bits per second, default = 50000000", ParamConverterInt64);
     SetParamDescription(PARAM_NAME_HDR, ParamCommon, L"Enable HDR on video (true, false), default = false", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_PRESERVE_ASPECT_RATIO, ParamCommon, L"Preserve aspect ratio of the server display (true, false), default = true", ParamConverterBoolean);
+    SetParamDescription(VIDEO_CODEC_EFC_OFF, ParamCommon, L"Force EFC (CSC in encoder) OFF (true, false), default = false", ParamConverterBoolean);
+
 
     SetParamDescription(PARAM_NAME_AUDIO_CODEC, ParamCommon, L"Specify audio codec: [aac, opus], default = aac", nullptr);
     SetParamDescription(PARAM_NAME_AUDIO_BITRATE, ParamCommon, L"Audio bitrate in bits per second, default = 256000", ParamConverterInt64);
@@ -187,16 +192,16 @@ RemoteDesktopServer::RemoteDesktopServer()
 
 }
 
-RemoteDesktopServer::Status RemoteDesktopServer::Init()
+RemoteDesktopServer::EStatus RemoteDesktopServer::Init(int argc/* = 0*/, const char** argv/* = nullptr*/)
 {
-    Status result = Status::FAIL;
+    EStatus result = EStatus::FAIL;
     if (InitAMF() != true)
     {
         std::cerr << "Failed to initialize AMF. Check AMD graphics driver installation.\n";
     }
     else
     {
-        if (parseCmdLineParameters(this) != true)
+        if (parseCmdLineParameters(this, argc, const_cast<char**>(argv)) != true)
         {
             AMFTraceError(AMF_FACILITY, L"Failed to parse command line parameters");
         }
@@ -227,14 +232,14 @@ RemoteDesktopServer::Status RemoteDesktopServer::Init()
                     {
                         m_Port = uint16_t(port);
                     }
-                    result = Status::SKIP;
+                    result = EStatus::SKIP;
                 }
                 else if (GetParam(PARAM_NAME_PORT, port) == AMF_OK)
                 {
                     m_Port = uint16_t(port);
                 }
 
-                if (result != Status::SKIP)
+                if (result != EStatus::SKIP)
                 {
                     std::remove(GetSemaphoreFileName().c_str());    //  Remove the shutdown semaphore file
                     m_CurrentTime = (new amf::AMFCurrentTimeImpl());
@@ -254,7 +259,7 @@ RemoteDesktopServer::Status RemoteDesktopServer::Init()
                     }
                     else if (InitAudioCapture() != true)
                     {
-                        AMFTraceError(AMF_FACILITY, L"Failed to create/initialize audio capture");
+                        AMFTraceError(AMF_FACILITY, L"Failed to create/initialize audio capture - no default audio output?");
                     }
                     else if (InitAudioCodec() != true)
                     {
@@ -278,7 +283,7 @@ RemoteDesktopServer::Status RemoteDesktopServer::Init()
                     }
                     else
                     {
-                        result = Status::OK;
+                        result = EStatus::OK;
                     }
                 }
             }
@@ -293,14 +298,14 @@ RemoteDesktopServer::Status RemoteDesktopServer::Init()
 
 void RemoteDesktopServer::Terminate()
 {
-    TerminateControllers();
     TerminateStreamer();
-    TerminateCursorCapture();
     TerminateAudioCodec();
     TerminateAudioCapture();
     TerminateVideoCodec();
     TerminateVideoCapture();
     TerminateNetwork();
+    TerminateControllers();
+    TerminateCursorCapture();
     OnAppTerminate();
     m_CurrentTime = nullptr;
     m_AVStreamer = nullptr;
@@ -372,24 +377,31 @@ bool RemoteDesktopServer::InitAMF()
 
         if (g_AMFFactory.GetAMFDLLHandle() != nullptr)
         {
-            amf_increase_timer_precision();
 #ifdef _DEBUG
             int32_t traceLevel = AMF_TRACE_DEBUG;
 #else
             int32_t traceLevel = AMF_TRACE_INFO;
 #endif
+
+#if defined(__linux)
+    #ifdef _DEBUG
+            traceLevel = AMF_TRACE_INFO;
+    #else
+            traceLevel = AMF_TRACE_ERROR;
+    #endif
+#endif
             g_AMFFactory.GetTrace()->TraceEnableAsync(false);
             g_AMFFactory.GetTrace()->SetGlobalLevel(traceLevel);
             g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_CONSOLE, AMF_TRACE_ERROR);
             g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_DEBUG_OUTPUT, traceLevel);
-            g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, AMF_TRACE_INFO);
+            g_AMFFactory.GetTrace()->SetWriterLevel(AMF_TRACE_WRITER_FILE, traceLevel);
 
             static constexpr const wchar_t* componentNames[] =
             {
                  L"AMFEncoderVCE", L"UVEEncoderTrace", L"EncoderVCEPropertySet", L"EncoderH264PropertySet", L"EncoderVulkanH264PropertySet",
                  L"VCEEncoderTrace", L"AMFEncoderVulkan", L"AMFEncoderHEVC", L"EncoderUVEHEVCImpl", L"encoderuveh264impl", L"AMFEncoderUVE",
                  L"AMFEncoderCoreBaseImpl", L"AMFEncoderCoreHevc", L"AMFVideoConverterImpl", L"AMFEncoderCoreImpl", L"AMFScreenCaptureImpl",
-                 L"EncodeQueuePalImpl", L"AMFAudioCaptureImpl", L"AMFEncoderCoreAv1", L"AMFEncoderCoreH264"
+                 L"EncodeQueuePalImpl", L"AMFAudioCaptureImpl", L"AMFEncoderCoreAv1", L"AMFEncoderCoreH264", L"AMFScreenCaptureEngineImplDX"
             };
             for (auto& it : componentNames)
             {
@@ -431,6 +443,7 @@ bool RemoteDesktopServer::InitVideoCapture()
 {
     bool result = false;
     AMF_RESULT amfResult = AMF_OK;
+    static constexpr const int64_t DEFAULT_FRAMERATE = 60;
 
     if (m_VideoCapture == nullptr)  //  Check for nullptr since capture can be created by the platform-specific derived class, e.g. MS Desktop Duplication
     {
@@ -448,6 +461,9 @@ bool RemoteDesktopServer::InitVideoCapture()
         amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MONITOR_INDEX, monitorID);
         m_VideoStreamDescriptor.SetSourceID(static_cast<int32_t>(monitorID));
 
+        bool forceCopy = false;
+        GetParam(CAPTURE_FORCE_COPY, forceCopy);
+
         std::wstring captureMode = CAPTURE_MODE_FRAMERATE;
         if (GetParamWString(PARAM_NAME_CAPTURE_MODE, captureMode) == AMF_OK)
         {
@@ -460,7 +476,7 @@ bool RemoteDesktopServer::InitVideoCapture()
             {
             case AMF_OK:
                 {
-                    int64_t frameRate = 60;
+                    int64_t frameRate = DEFAULT_FRAMERATE;
                     GetParam(PARAM_NAME_CAPTURE_RATE, frameRate);
                     amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(int32_t(frameRate), 1));
                     switch (amfResult)
@@ -493,12 +509,12 @@ bool RemoteDesktopServer::InitVideoCapture()
         else if (captureMode == CAPTURE_MODE_PRESENT)
         {
             amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_WAIT_FOR_PRESENT));
-            m_VideoStreamDescriptor.SetFramerate(60.0); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
+            m_VideoStreamDescriptor.SetFramerate(float(DEFAULT_FRAMERATE)); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
         }
         else if (captureMode == CAPTURE_MODE_ASAP)
         {
             amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_GET_CURRENT_SURFACE));
-            m_VideoStreamDescriptor.SetFramerate(60.0); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
+            m_VideoStreamDescriptor.SetFramerate(float(DEFAULT_FRAMERATE)); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
         }
         if (result != true)
         {
@@ -510,6 +526,15 @@ bool RemoteDesktopServer::InitVideoCapture()
             {
                 AMFTraceError(AMF_FACILITY, L"Failed to set video capture mode to %s, result=%s", captureMode.c_str(), amf::AMFGetResultText(amfResult));
             }
+        }
+
+        if ((amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, forceCopy)) == AMF_OK)
+        {
+            AMFTraceInfo(AMF_FACILITY, L"Captured surface will be %s", forceCopy ? L"duplicated" : L"used directly");
+        }
+        else
+        {
+            AMFTraceWarning(AMF_FACILITY, L"Capture component does not support surface duplication, ignored, result=%s", amf::AMFGetResultText(amfResult));
         }
 
         if ((amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_CURRENT_TIME_INTERFACE, m_CurrentTime)) != AMF_OK)
@@ -529,6 +554,7 @@ bool RemoteDesktopServer::InitVideoCapture()
                 result = true;
             }
         }
+
     }
 
     return result;
@@ -550,7 +576,8 @@ bool RemoteDesktopServer::InitAudioCapture()
 
     if ((amfResult = AMFCreateComponentAudioCapture(m_Context, &m_AudioCapture)) != AMF_OK)
     {
-        result = false;
+        //  We don't want to fail here when there's no default audio output in the system - we want to log a message and continue without audio
+        result = true;
         AMFTraceError(AMF_FACILITY, L"Failed to create an audio capture component, result = %s", amf::AMFGetResultText(amfResult));
     }
     else if ((amfResult = m_AudioCapture->SetProperty(AUDIOCAPTURE_CURRENT_TIME_INTERFACE, m_CurrentTime)) != AMF_OK)
@@ -907,25 +934,30 @@ bool RemoteDesktopServer::InitStreamer()
     bool preserveAspectRatio = true;
     GetParam(PARAM_NAME_PRESERVE_ASPECT_RATIO, preserveAspectRatio);
 
-    int64_t audioCaptureSamplingRate = 0;
-    m_AudioCapture->GetProperty(AUDIOCAPTURE_SAMPLERATE, &audioCaptureSamplingRate);
-    int64_t audioChannels = 0;
-    m_AudioCapture->GetProperty(AUDIOCAPTURE_CHANNELS, &audioChannels);
-    int64_t audioChannelLayout = 0;
-    m_AudioCapture->GetProperty(AUDIOCAPTURE_CHANNEL_LAYOUT, &audioChannelLayout);
-    int64_t audioCaptureFormat = 0;
-    m_AudioCapture->GetProperty(AUDIOCAPTURE_FORMAT, &audioCaptureFormat);
+    bool forceEFCOff = false;
+    GetParam(VIDEO_CODEC_EFC_OFF, forceEFCOff);
 
-    if ((amfResult = m_VideoOutput->Init(hdr == true ? m_VideoEncoder->GetPreferredHDRFormat() : m_VideoEncoder->GetPreferredSDRFormat(), m_VideoStreamDescriptor.GetResolution(), m_VideoStreamDescriptor.GetResolution(),
-        m_VideoStreamDescriptor.GetBitrate(), m_VideoStreamDescriptor.GetFramerate(), hdr, preserveAspectRatio, 0)) != AMF_OK)
+    int64_t audioCaptureSamplingRate = 0;
+    int64_t audioChannels = 0;
+    int64_t audioChannelLayout = 0;
+    int64_t audioCaptureFormat = 0;
+    if (m_AudioCapture != nullptr)
+    {
+        m_AudioCapture->GetProperty(AUDIOCAPTURE_SAMPLERATE, &audioCaptureSamplingRate);
+        m_AudioCapture->GetProperty(AUDIOCAPTURE_CHANNELS, &audioChannels);
+        m_AudioCapture->GetProperty(AUDIOCAPTURE_CHANNEL_LAYOUT, &audioChannelLayout);
+        m_AudioCapture->GetProperty(AUDIOCAPTURE_FORMAT, &audioCaptureFormat);
+        if (m_AudioOutput != nullptr && (amfResult = m_AudioOutput->Init(amf::AMF_AUDIO_FORMAT(audioCaptureFormat), int32_t(audioCaptureSamplingRate), int32_t(audioChannels), int32_t(audioChannelLayout),
+            m_AudioStreamDescriptor.GetSamplingRate(), m_AudioStreamDescriptor.GetNumOfChannels(), m_AudioStreamDescriptor.GetLayout(), m_AudioStreamDescriptor.GetBitrate())) != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to initialize audio output, result=%s", amf::AMFGetResultText(amfResult));
+            result = false;
+        }
+    }
+    if (m_VideoOutput != nullptr && (amfResult = m_VideoOutput->Init(hdr == true ? m_VideoEncoder->GetPreferredHDRFormat() : m_VideoEncoder->GetPreferredSDRFormat(), m_VideoStreamDescriptor.GetResolution(), m_VideoStreamDescriptor.GetResolution(),
+        m_VideoStreamDescriptor.GetBitrate(), m_VideoStreamDescriptor.GetFramerate(), hdr, preserveAspectRatio, 0, forceEFCOff)) != AMF_OK)
     {
         AMFTraceError(AMF_FACILITY, L"Failed to initialize video output, result=%s", amf::AMFGetResultText(amfResult));
-        result = false;
-    }
-    else if ((amfResult = m_AudioOutput->Init(amf::AMF_AUDIO_FORMAT(audioCaptureFormat), int32_t(audioCaptureSamplingRate), int32_t(audioChannels), int32_t(audioChannelLayout),
-                                              m_AudioStreamDescriptor.GetSamplingRate(), m_AudioStreamDescriptor.GetNumOfChannels(), m_AudioStreamDescriptor.GetLayout(), m_AudioStreamDescriptor.GetBitrate())) != AMF_OK)
-    {
-        AMFTraceError(AMF_FACILITY, L"Failed to initialize audio output, result=%s", amf::AMFGetResultText(amfResult));
         result = false;
     }
     else if (m_AVStreamer == nullptr)
@@ -946,24 +978,34 @@ bool RemoteDesktopServer::InitStreamer()
             qosInitParams.maxEncoderQueueDepth = QOS_DEFAULT_MAX_ENCODER_QUEUE_DEPTH;
             qosInitParams.maxDecoderQueueDepth = QOS_DEFAULT_MAX_DECODER_QUEUE_DEPTH;
 
-            if (enableQoSBitrate == true && enableQoSFramerate == true)
+            std::wstring captureMode = CAPTURE_MODE_FRAMERATE;
+            if (GetParamWString(PARAM_NAME_CAPTURE_MODE, captureMode) == AMF_OK)
             {
-                qosInitParams.strategy = ssdk::util::QoS::QoSStrategy::ADJUST_BOTH;
+                captureMode = ::toUpper(captureMode);
+            }
+
+            qosInitParams.strategy = ssdk::util::QoS::QoSStrategy::ADJUST_NONE;
+            if (captureMode == CAPTURE_MODE_FRAMERATE)
+            {
+                if (enableQoSBitrate == true && enableQoSFramerate == true)
+                {
+                    qosInitParams.strategy = ssdk::util::QoS::QoSStrategy::ADJUST_BOTH;
+                }
+                else if (enableQoSFramerate == true)
+                {
+                    qosInitParams.strategy = ssdk::util::QoS::QoSStrategy::ADJUST_FRAMERATE;
+                }
             }
             else if (enableQoSBitrate == true)
             {
                 qosInitParams.strategy = ssdk::util::QoS::QoSStrategy::ADJUST_VIDEOBITRATE; 
-            }
-            else // enableQoSFramerate == true
-            {
-                qosInitParams.strategy = ssdk::util::QoS::QoSStrategy::ADJUST_FRAMERATE;
             }
             
             int64_t frameRate = QOS_DEFAULT_FRAMERATE;
             GetParam(PARAM_NAME_CAPTURE_RATE, frameRate);
             qosInitParams.maxFramerate = (float)frameRate;
 
-            int64_t minFrameRate = QOS_DEFAULT_FRAMERATE_MIN;
+            int64_t minFrameRate = frameRate / 2;
             GetParam(PARAM_NAME_QOS_MIN_FRAMERATE, minFrameRate);
             qosInitParams.minFramerate = (float)minFrameRate;
 

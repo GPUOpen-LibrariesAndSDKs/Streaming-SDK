@@ -56,6 +56,8 @@
 #include <string>
 #include <memory>
 
+extern const wchar_t* PARAM_NAME_MONITOR_ID;
+
 class RemoteDesktopServer :
     public ParametersStorage,
     public ssdk::transport_common::ServerTransport::ConnectionManagerCallback
@@ -63,7 +65,7 @@ class RemoteDesktopServer :
 public:
     typedef std::unique_ptr<RemoteDesktopServer>    Ptr;
 
-    enum class Status
+    enum class EStatus
     {
         OK,
         FAIL,
@@ -75,7 +77,7 @@ protected:
 public:
     virtual ~RemoteDesktopServer() = default;
 
-    virtual Status Init();
+    virtual EStatus Init(int argc = 0, const char** argv = nullptr);
     virtual void Terminate();
 
     virtual bool RunServer();

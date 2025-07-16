@@ -61,7 +61,7 @@ namespace ssdk::video
         ~MonoscopicVideoOutput();
 
         AMF_RESULT Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& inputResolution, const AMFSize& streamResolution,
-                        int64_t bitrate, float frameRate, bool hdr, bool preserveAspectRatio = true, int64_t intraRefreshPeriod = 0);
+                        int64_t bitrate, float frameRate, bool hdr, bool preserveAspectRatio = true, int64_t intraRefreshPeriod = 0, bool forceEFCOff = false);
 
         AMF_RESULT Terminate();
 
@@ -77,6 +77,8 @@ namespace ssdk::video
 
         float GetFramerate() const noexcept;
         AMF_RESULT SetFramerate(float framerate);
+
+        inline bool IsEFCForcedOff() const noexcept { return m_ForceEFCOff; }
 
     protected:
         AMF_RESULT InitializeEncoder(const AMFSize& streamResolution, int64_t bitrate, float frameRate, const ColorParameters& colorParams, int64_t intraRefreshPeriod);
@@ -149,5 +151,7 @@ namespace ssdk::video
 
         amf_pts                     m_FrameCntStartTime = 0;
         uint32_t                    m_FrameCnt = 0;
+
+        bool                        m_ForceEFCOff = false;
     };
 }

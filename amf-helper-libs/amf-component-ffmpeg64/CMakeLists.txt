@@ -7,8 +7,6 @@ endif()
 # Define the project name
 project(amf-component-ffmpeg64)
 
-if(WIN32)
-
 # Define source files
 set(SOURCE_FILES
     "../../amf/amf/public/common/AMFFactory.cpp"
@@ -33,8 +31,18 @@ set(SOURCE_FILES
     "../../amf/amf/public/src/components/ComponentsFFMPEG/HEVCEncoderFFMPEGImpl.cpp"
     "../../amf/amf/public/src/components/ComponentsFFMPEG/UtilsFFMPEG.cpp"
     "../../amf/amf/public/src/components/ComponentsFFMPEG/VideoDecoderFFMPEGImpl.cpp"
+)
+
+# Add platform-specific files:
+if(WIN32)
+set(SOURCE_FILES ${SOURCE_FILES}
     "../../amf/amf/public/common/Windows/ThreadWindows.cpp"
 )
+elseif(UNIX)
+    set(SOURCE_FILES ${SOURCE_FILES}
+    "../../amf/amf/public/common/Linux/ThreadLinux.cpp"
+)
+endif()
 
 # Define header files
 set(HEADER_FILES
@@ -82,6 +90,8 @@ set(HEADER_FILES
 add_library(amf-component-ffmpeg64 SHARED ${SOURCE_FILES} ${HEADER_FILES})
 
 set(FFMPEG_VERSION 7.0)
+
+if(WIN32)
 set(FFMPEG_BASE_PATH "../../amf/Thirdparty/ffmpeg/ffmpeg/ffmpeg-${FFMPEG_VERSION}/x64/release")
 
 get_filename_component(FFMPEG_BASE_PATH_ABS ${FFMPEG_BASE_PATH} ABSOLUTE)
@@ -106,6 +116,32 @@ target_link_libraries(amf-component-ffmpeg64 PRIVATE
     "${FFMPEG_BASE_PATH_ABS}/lib/swresample.lib"
     "${FFMPEG_BASE_PATH_ABS}/lib/swscale.lib" )
 
+elseif(UNIX)
+set(FFMPEG_BASE_PATH "${CMAKE_SOURCE_DIR}/amf/Thirdparty/ffmpeg/ffmpeg/ffmpeg-${FFMPEG_VERSION}/lnx64/release")
+
+set(FFMPEG_DLLS
+	"${FFMPEG_BASE_PATH}/bin/libavcodec.so.61"
+	"${FFMPEG_BASE_PATH}/bin/libavdevice.so.61"
+	"${FFMPEG_BASE_PATH}/bin/libavfilter.so.10"
+	"${FFMPEG_BASE_PATH}/bin/libavformat.so.61"
+	"${FFMPEG_BASE_PATH}/bin/libavutil.so.59"
+	"${FFMPEG_BASE_PATH}/bin/libswresample.so.5"
+	"${FFMPEG_BASE_PATH}/bin/libswscale.so.8"
+)
+
+target_link_libraries(amf-component-ffmpeg64 PRIVATE
+    "${FFMPEG_BASE_PATH}/bin/libavcodec.so.61"
+    "${FFMPEG_BASE_PATH}/bin/libavdevice.so.61"
+    "${FFMPEG_BASE_PATH}/bin/libavfilter.so.10"
+    "${FFMPEG_BASE_PATH}/bin/libavformat.so.61"
+    "${FFMPEG_BASE_PATH}/bin/libavutil.so.59"
+    "${FFMPEG_BASE_PATH}/bin/libswresample.so.5"
+    "${FFMPEG_BASE_PATH}/bin/libswscale.so.8"
+)
+
+endif()
+
+
 # Include directories
 target_include_directories(amf-component-ffmpeg64 PRIVATE
     ../../amf/amf
@@ -118,13 +154,18 @@ target_compile_definitions(amf-component-ffmpeg64 PRIVATE
     $<$<CONFIG:Release>:NDEBUG;_LIB;AMF_COMPONENT_FFMPEG_EXPORTS;_CRT_SECURE_NO_WARNINGS>
 )
 
-# Link options
-target_link_options(amf-component-ffmpeg64 PRIVATE
-    $<$<CONFIG:Debug>:/DEBUG /INCREMENTAL>
-    $<$<CONFIG:Release>:/LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO>
-)
+if(WIN32)
+    # Link options
+    target_link_options(amf-component-ffmpeg64 PRIVATE
+        $<$<CONFIG:Debug>:/DEBUG /INCREMENTAL>
+        $<$<CONFIG:Release>:/LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO>
+    )
 
-set(OUTPUT_DIRECTORY "$<IF:$<CONFIG:Debug>,${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG},$<IF:$<CONFIG:Release>,${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE},$<IF:$<CONFIG:RelWithDebInfo>,${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO},${CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL}>>>")
+    set(OUTPUT_DIRECTORY "$<IF:$<CONFIG:Debug>,${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG},$<IF:$<CONFIG:Release>,${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE},$<IF:$<CONFIG:RelWithDebInfo>,${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO},${CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL}>>>")
+
+elseif(UNIX)
+    set(OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+endif()
 
 foreach(DLL ${FFMPEG_DLLS})
     get_filename_component(DLL_NAME ${DLL} NAME)
@@ -137,5 +178,3 @@ foreach(DLL ${FFMPEG_DLLS})
         COMMENT "Copying ${DLL} to ${OUTPUT_DIRECTORY}/${DLL_NAME}"
     )
 endforeach()
-
-endif()

@@ -33,6 +33,7 @@
 #pragma once
 
 #include "../ControllerBase.h"
+#include "sdk/video/VideoReceiverPipeline.h"
 
 namespace ssdk::ctls
 {
@@ -40,7 +41,8 @@ namespace ssdk::ctls
     class X11TouchController : public ControllerBase
     {
     public:
-        X11TouchController(ControllerManagerPtr pControllerManager, Display* dpy, Window hWnd);
+        X11TouchController(ControllerManagerPtr pControllerManager, Display* dpy, Window hWnd,
+            ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline);
         ~X11TouchController() = default;
 
         // ANSI interface;
@@ -62,9 +64,10 @@ namespace ssdk::ctls
             double x{};
             double y{};
         };
-        TouchPoint NormalizeTouchPoint(TouchPoint) const;
+        TouchPoint NormalizeTouchPoint(TouchPoint touchPoint) const;
         Display* m_pDpy{};
         Window m_hWnd{};
+        ssdk::video::VideoReceiverPipeline::Ptr m_pVideoPipeline;
     };
 #endif
 }

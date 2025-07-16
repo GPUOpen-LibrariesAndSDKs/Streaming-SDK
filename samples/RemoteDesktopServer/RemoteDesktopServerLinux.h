@@ -36,6 +36,9 @@
 #ifndef _WIN32
 
 #include "RemoteDesktopServer.h"
+#include "amf/public/samples/CPPSamples/common/DeviceVulkan.h"
+#include "public/common/Linux/XDisplay.h"
+#include "public/common/Linux/XrandrPtrs.h"
 
 class RemoteDesktopServerLinux : public RemoteDesktopServer
 {
@@ -53,15 +56,18 @@ protected:
     void TerminateVulkan();
 
     virtual bool InitVideoCapture() override;
-
     virtual bool InitCursorCapture() override;
-
     virtual bool InitDirectories() override;
-
     virtual bool InitControllers() override;
 
+    AMF_RESULT   InitCrtcInfo();
+
 protected:
-    bool m_Interactive = false;
+    bool            m_Interactive = false;
+    DeviceVulkan    m_DeviceVulkan;
+    XDisplay::Ptr   m_pDisplay;
+    XRRCrtcInfoPtr  m_pCrtcInfo = XRRCrtcInfoPtr(nullptr, &XRRFreeCrtcInfo);
+    amf::AMFCriticalSection	m_sync;
 };
 
 #endif

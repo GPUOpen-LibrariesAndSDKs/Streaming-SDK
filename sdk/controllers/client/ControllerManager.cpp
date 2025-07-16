@@ -121,6 +121,25 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
+#if !defined(_WIN32)
+    bool ControllerManager::ProcessMessage(ExtWindowMessage msg)
+    {
+        bool result = false;
+        for (const ControllerBase::Ptr& pController : m_Controllers)
+        {
+            if (pController != nullptr)
+            {
+                if (pController->ProcessMessageExt(msg) == AMF_OK)
+                {
+                    result = true;
+                }
+            }
+        }
+        return result;
+    }
+#endif
+
+    //-------------------------------------------------------------------------------------------------
     void ControllerManager::ReleaseModifiers()
     {
         for (const ControllerBase::Ptr& pController : m_Controllers)

@@ -54,6 +54,7 @@ namespace ssdk::ctls
 
         // CursorCallback interface
         virtual void OnCursorChanged(const transport_common::Cursor& cursor) override;
+        virtual void OnCursorHidden() override;
 
     private:
         XDisplay::Ptr   m_dpy;

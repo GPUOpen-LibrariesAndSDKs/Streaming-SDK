@@ -475,13 +475,14 @@ void AVStreamer::OnVideoStats(ssdk::transport_common::SessionHandle session, ssd
         {
             m_QoS->UpdateSessionStats(session, stats.lastStatsTime, stats.receiverFramerate, stats.keyFrameReqCount, stats.avgSendTime, stats.decoderQueueDepth);
         }
-        AMFTraceInfo(AMF_FACILITY, L"Average latency (ms): full %5.2f, client %5.2f, server %5.2f, encoder %5.2f, network %5.2f, decoder %5.2f, Frame rate: %5.2f fps",
+        AMFTraceInfo(AMF_FACILITY, L"Average latency (ms): full %5.2f, client %5.2f, server %5.2f, encoder %5.2f, network %5.2f, decoder %5.2f (queue depth %lld frames), Frame rate: %5.2f fps",
             stats.fullLatency,
             stats.clientLatency,
             stats.serverLatency,
             stats.encoderLatency,
             stats.networkLatency,
             stats.decoderLatency,
+            stats.decoderQueueDepth,
             stats.receiverFramerate);
     }
 }
@@ -511,13 +512,16 @@ void AVStreamer::OnAudioStreamSubscribed(ssdk::transport_common::SessionHandle s
         bool result = m_AudioTransmitterAdapter->RegisterSession(session);
         if (result == true)
         {
-            if (m_AudioCaptureThread.IsRunning() == false)
+            if (m_AudioCapture != nullptr && m_AudioOutput != nullptr)
             {
-                m_AudioCaptureThread.Start();
-                AMFTraceInfo(AMF_FACILITY, L"Audio capture started");
+                if (m_AudioCaptureThread.IsRunning() == false)
+                {
+                    m_AudioCaptureThread.Start();
+                    AMFTraceInfo(AMF_FACILITY, L"Audio capture started");
+                }
+                m_AudioTransmitterAdapter->SendInitToSession(session);
+                AMFTraceInfo(AMF_FACILITY, L"Successfully registered session %lld for audio stream %lld", session, streamID);
             }
-            m_AudioTransmitterAdapter->SendInitToSession(session);
-            AMFTraceInfo(AMF_FACILITY, L"Successfully registered session %lld for audio stream %lld", session, streamID);
         }
         else
         {
@@ -591,9 +595,52 @@ void AVStreamer::CaptureVideo()
     amf::AMFDataPtr capturedData;
     if (m_VideoCapture->QueryOutput(&capturedData) == AMF_OK)
     {
-        amf::AMFSurfacePtr frame(capturedData);
-        m_TimestampCalibrator.SubmitVideo(frame);   //  This synchronizes low latency video timestamp to audio. See notes in sdk/util/pipeline/TimestampCalibrator.h for detailed explanations
-        m_VideoOutput->SubmitInput(frame, lastOriginPts, timeOfLastOriginPts);
+#ifdef _WIN32
+        /* AMD DirectCapture has a known limitation on DX12 where it cannot properly synchronize with the encoder when EFC (color space converter built into the encoder itself) is enabled
+        * and AMF VideoConvertor component is not in use. The necessary condition for EFC to be enabled is equality of resolution of the captured surface and the encoded stream resolution.
+        * When EFC is enabled, the captured surface is passed directly to the encoder component, the Capture component might overwrite the content of this surface before the encoder is 
+        * done encoding it, resulting in visible artifacts. The workaround for this is to create a copy of this surface and let the encoder work with the copy. This copying is performed by
+        * the Capture component itself and is controlled by the AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT property.
+        * 
+        * This problem doesn't exist when the VideoConverter component is being used as the encoder receives a scaled output from it in a different surface. This is a Windows/DX12 issue only.
+        * 
+        * The code below works around this issue by enabling Capture output duplication only when the captured surface's resolution equals the resolution of the encoded stream. This results in
+        * a small (<1ms) perfomance penalty, which is generally unnoticeable, especially on slower networks.
+        */
+        if (capturedData->GetMemoryType() == amf::AMF_MEMORY_DX12 && m_VideoOutput->IsEFCForcedOff() == false)
+        {
+            amf::AMFSurfacePtr capturedSurface(capturedData);
+            amf::AMFPlanePtr plane = capturedSurface->GetPlaneAt(0);
+            AMFSize streamResolution = m_VideoOutput->GetEncodedResolution();
+            bool duplicate = false;
+            bool duplicationSupported = false;
+            if (m_VideoCapture->GetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, &duplicate) == AMF_OK)
+            {
+                duplicationSupported = true;
+            }
+            if (duplicationSupported == true)
+            {
+                if (plane->GetWidth() == streamResolution.width && plane->GetHeight() == streamResolution.height && duplicate == false)
+                {
+                    capturedData = nullptr;
+                    m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, true);
+                    m_VideoCapture->ReInit(0, 0);
+                }
+                else if ((plane->GetWidth() != streamResolution.width || plane->GetHeight() != streamResolution.height) && duplicate == true)
+                {
+                    capturedData = nullptr;
+                    m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, false);
+                    m_VideoCapture->ReInit(0, 0);
+                }
+            }
+        }
+#endif
+        if (capturedData != nullptr)
+        {
+            amf::AMFSurfacePtr frame(capturedData);
+            m_TimestampCalibrator.SubmitVideo(frame);   //  This synchronizes low latency video timestamp to audio. See notes in sdk/util/pipeline/TimestampCalibrator.h for detailed explanations
+            m_VideoOutput->SubmitInput(frame, lastOriginPts, timeOfLastOriginPts);
+        }
     }
 }
 
@@ -605,6 +652,10 @@ void AVStreamer::CaptureAudio()
         amf::AMFAudioBufferPtr buffer(capturedData);
         m_TimestampCalibrator.SubmitAudio(buffer);
         m_AudioOutput->SubmitInput(buffer);
+    }
+    else if (capturedData == nullptr)
+    {
+        amf_sleep(1);
     }
 }
 

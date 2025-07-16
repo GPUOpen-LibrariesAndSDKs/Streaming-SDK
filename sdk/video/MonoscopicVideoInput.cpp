@@ -38,7 +38,7 @@
 #include "amf/public/common/TraceAdapter.h"
 
 static constexpr const wchar_t* const AMF_FACILITY = L"ssdk::video::MonoscopicVideoInput";
-static constexpr const int32_t MAX_INPUT_QUEUE_DEPTH = 30;
+static constexpr const int32_t MAX_INPUT_QUEUE_DEPTH = 10;
 
 namespace ssdk::video
 {
@@ -217,39 +217,36 @@ namespace ssdk::video
         AMF_RETURN_IF_FALSE(input != nullptr, AMF_INVALID_ARG, L"MonoscopicVideoInput::SubmitInput(): Video input cannot be NULL");
 
         amf::AMFLock m_LockInput(&m_InputGuard);
-        if (m_InputQueue.size() < MAX_INPUT_QUEUE_DEPTH)
+        if (discontinuity == true)
         {
-            if (discontinuity == true)
-            {
-                input->SetProperty(ssdk::video::VIDEO_DISCONTINUITY, discontinuity);
-            }
-            m_InputQueue.push_back({ input, frameType });
-            int retryCnt = 0;
-            constexpr const int MAX_RETRIES = 10;
-            do
-            {
-                result = m_Decoder->SubmitInput(m_InputQueue.front().m_Buffer, m_InputQueue.front().m_FrameType);
-                if (result == AMF_OK || result == AMF_NEED_MORE_INPUT)
-                {   //  Successfully submitted a frame to the decoder
-                    m_InputQueue.pop_front();
-                    ++m_InputFrameCnt;
-                    result = AMF_OK;
-                }
-                else if (result == AMF_INPUT_FULL)
-                {
-                    ++retryCnt;
-                    amf_sleep(1);
-                    AMFTraceDebug(AMF_FACILITY, L"Video decoder input is full, queue depth %lu, retries count %d", m_InputQueue.size(), retryCnt);
-                }
-            } while (result == AMF_INPUT_FULL && retryCnt < MAX_RETRIES);
-            if (result != AMF_OK)
-            {
-                AMFTraceError(AMF_FACILITY, L"Failed to submit input to video decoder, queue depth %lu, retries count %d, result=%s", m_InputQueue.size(), retryCnt, amf::AMFGetResultText(result));
-            }
+            input->SetProperty(ssdk::video::VIDEO_DISCONTINUITY, discontinuity);
         }
-        else
+        m_InputQueue.push_back({ input, frameType });
+        int retryCnt = 0;
+        constexpr const int MAX_RETRIES = 10;
+        do
         {
-            AMFTraceWarning(AMF_FACILITY, L"MonoscopicVideoInput::SubmitInput() - input full, queue depth is %lu", m_InputQueue.size());
+            result = m_Decoder->SubmitInput(m_InputQueue.front().m_Buffer, m_InputQueue.front().m_FrameType);
+            if (result == AMF_OK || result == AMF_NEED_MORE_INPUT)
+            {   //  Successfully submitted a frame to the decoder
+                m_InputQueue.pop_front();
+                ++m_InputFrameCnt;
+                result = AMF_OK;
+            }
+            else if (result == AMF_INPUT_FULL || result == AMF_DECODER_NO_FREE_SURFACES)
+            {
+                ++retryCnt;
+                result = AMF_INPUT_FULL;
+                amf_sleep(1);
+                AMFTraceDebug(AMF_FACILITY, L"Video decoder input is full, queue depth %lu, retries count %d", m_InputQueue.size(), retryCnt);
+            }
+        } while (result == AMF_INPUT_FULL && retryCnt < MAX_RETRIES);
+        if (result != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to submit input to video decoder, queue depth %lu, retries count %d, result=%s", m_InputQueue.size(), retryCnt, amf::AMFGetResultText(result));
+        }
+        if (m_InputQueue.size() == MAX_INPUT_QUEUE_DEPTH && result == AMF_OK)
+        {
             result = AMF_INPUT_FULL;
         }
         return result;
@@ -276,6 +273,19 @@ namespace ssdk::video
                 {
                     amf::AMFLock m_LockInput(&m_InputGuard);
                     queueDepth = m_InputQueue.size();
+                    if (queueDepth > 0)
+                    {
+                        AMF_RESULT result;
+                        do
+                        {
+                            result = m_Decoder->SubmitInput(m_InputQueue.front().m_Buffer, m_InputQueue.front().m_FrameType);
+                            if (result == AMF_OK || result == AMF_NEED_MORE_INPUT)
+                            {   //  Successfully submitted a frame to the decoder
+                                m_InputQueue.pop_front();
+                                ++m_InputFrameCnt;
+                            }
+                        } while (result == AMF_NEED_MORE_INPUT && (queueDepth = m_InputQueue.size()) > 0);
+                    }
                 }
                 if (queueDepth == 0)
                 {   //  No output has been produced yet and the input queue is empty - sleep for 1ms not to burn CPU cycles

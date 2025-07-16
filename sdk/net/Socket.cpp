@@ -350,11 +350,51 @@ namespace ssdk::net
         {
             // need to use a Ptr to avoid object slicing
             Address::Ptr bindAddress = address.Duplicate();
+#ifdef __linux
+            if (address.GetAddressFamily() == AddressFamily::ADDR_UNIX)
+            {
+                UnixDomainAddress unixAddr(address);
+                const char* un_path = unixAddr.ToSockAddr_Un().sun_path;
+                if (un_path[0] != '\0')
+                {
+                    //try to unlink file path before binding
+                    unlink(un_path);
+                }
+            }
+            // binding by ip address breaks broadcast addresses on linux, so instead we need to bind to the interface by name
+            if (address.GetAddressFamily() == AddressFamily::ADDR_IP)
+            {
+                IPv4Address ipAddr(address);
+                if (ipAddr.GetAddress().s_addr != 0) {
+                    std::string iface = ipAddr.GetInterfaceName();
+                    if (iface.empty() == true)
+                    {
+                        AMFTraceError(AMF_FACILITY, L"Bind() failed, couldn't find interface for ip %S", ipAddr.GetAddressAsString().c_str());
+                        return Result::INVALID_ADDRESS;
+                    }
+                    SetSocketOpt(SOL_SOCKET, SO_BINDTODEVICE, iface.c_str(), iface.length());
+                    ipAddr.SetAddress("0.0.0.0");
+                    bindAddress = ipAddr.Duplicate();
+                }
+            }
+#endif
             if (::bind(m_Socket, &bindAddress->ToSockAddr(), (int)bindAddress->GetSize()) == -1)
             {
                 result = GetError(GetSocketOSError());
                 AMFTraceError(AMF_FACILITY, L"Bind()  bind() failed err=%s", GetErrorString(result));
             }
+#ifdef __linux
+            if (address.GetAddressFamily() == AddressFamily::ADDR_UNIX)
+            {
+                UnixDomainAddress unixAddr(address);
+                const char* un_path = unixAddr.ToSockAddr_Un().sun_path;
+                if (un_path[0] != '\0')
+                {
+                    //set permissions of socket to 777
+                    chmod(un_path, 0777);
+                }
+            }
+#endif
         }
         return result;
     }
@@ -412,6 +452,9 @@ namespace ssdk::net
 
     Socket::Result Socket::Send(const void* buf, size_t size, size_t* bytesSent, int flags)
     {
+#ifdef __linux
+        flags |= MSG_NOSIGNAL;
+#endif
         Socket::Result result = Result::OK;
         int sentCount = 0;
 

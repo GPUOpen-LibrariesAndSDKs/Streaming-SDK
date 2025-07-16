@@ -38,32 +38,62 @@
 
 namespace ssdk::ctls
 {
+    static constexpr const wchar_t* const AMF_FACILITY = L"MouseControllerLnx";
+    //-------------------------------------------------------------------------------------------------
+    void MouseController::Init()
+    {
+        // Check for WAYLAND_DISPLAY environment variable
+        const char* wayland_display = std::getenv("WAYLAND_DISPLAY");
+        if (wayland_display)
+        {
+            AMFTraceDebug(AMF_FACILITY, L"The current protocol is Wayland. WAYLAND_DISPLAY: %S", wayland_display);
+            m_bWayland = true;
+        }
+        else
+        {
+            AMFTraceDebug(AMF_FACILITY, L"The current protocol is not Wayland (likely X11 or another protocol).");
+            m_bWayland = false;
+        }
+    }
+
     //-------------------------------------------------------------------------------------------------
     void MouseController::UpdateFromServer()
     {
         Window focusedWindow;
         int revert_to;
-        XGetInputFocus(m_dpy, &focusedWindow, &revert_to);
-        if (amf_handle(focusedWindow) != m_hWnd)
+        XDisplayPtr dpy(m_dpy);
+        XGetInputFocus(dpy, &focusedWindow, &revert_to);
+        if (amf_handle(focusedWindow) == m_hWnd)
         {
-            return;
+            amf::AMFLock lock(&m_Sect);
+
+            AMFFloatPoint2D fMousePos = GetMouseConfig()->MousePosition();
+            WindowPoint pointScreen = { int(fMousePos.x), int(fMousePos.y) };
+
+            // Hide Cursor for warping on XWayland
+            if (m_bWayland == true)
+            {
+                // Hide Cursor
+                XFixesHideCursor((Display*)dpy, (Window)m_hWnd);
+                XFlush((Display*)dpy);
+            }
+            
+            // Set Cursor pos
+            XWarpPointer((Display*)dpy, None, (Window)m_hWnd, 0, 0, 0, 0, pointScreen.x, pointScreen.y);
+            XFlush((Display*)dpy);
+            
+            // Show Cursor
+            if (m_bWayland == true)
+            {
+                // Show Cursor
+                XFixesShowCursor((Display*)dpy, (Window)m_hWnd);
+                XFlush((Display*)dpy);
+            }
+            
+            //AMFTraceInfo(AMF_FACILITY, L"MouseController::MousePos(%d,%d)", pointScreen.x, pointScreen.y);
+            m_LastMousePoint.x = pointScreen.x;
+            m_LastMousePoint.y = pointScreen.y;
         }
-        amf::AMFLock lock(&m_Sect);
-
-        CtlEvent ev = {};
-        ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
-        ev.flags = DEVICE_MOUSE_POS_ABSOLUTE;
-        ev.value.floatPoint2DValue = GetMouseConfig()->MousePosition();
-
-        //AMFTraceInfo(AMF_FACILITY, L"MouseController::SetCursorPos(%6.5f,%6.5f)", ev.value.floatPoint2DValue.x, ev.value.floatPoint2DValue.y);
-        // To Do... SetCursorPos(int(ev.value.floatPoint2DValue.x), int(ev.value.floatPoint2DValue.y));
-
-        WindowPoint pointScreen = { -1, -1 };
-        // To Do... GetCursorPos(&pointScreen);
-        //AMFTraceInfo(AMF_FACILITY, L"MouseController::GetCursorPos out(%d,%d)", pointScreen.x, pointScreen.y);
-
-        m_LastMousePoint.x = pointScreen.x;
-        m_LastMousePoint.y = pointScreen.y;
     }
 
     //-------------------------------------------------------------------------------------------------
@@ -82,11 +112,9 @@ namespace ssdk::ctls
             }
         }
 
-        CtlEvent ev = {};
-
         XWindowAttributes attrib;
-        XGetWindowAttributes(m_dpy, (Window)m_hWnd, &attrib);
-
+        XDisplayPtr dpy(m_dpy);
+        XGetWindowAttributes(dpy, (Window)m_hWnd, &attrib);
 
         int diffXaxis = relativeRawPos[0];
         int diffYaxis = relativeRawPos[1];
@@ -96,33 +124,32 @@ namespace ssdk::ctls
             return AMF_OK;
         }
 
+        CtlEvent ev = {};
         ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
+        ev.flags = DEVICE_MOUSE_POS_ABSOLUTE;
 
         WindowPoint pointScreen = { -1, -1 };
 
+        // Normalize mouse position
         ev.value.floatPoint2DValue.x = float(diffXaxis) / float(attrib.width);
         ev.value.floatPoint2DValue.y = float(diffYaxis) / float(attrib.height);
 
         pointScreen.x = m_LastMousePoint.x + diffXaxis;
         pointScreen.y = m_LastMousePoint.y + diffYaxis;
+        //AMFTraceInfo(AMF_FACILITY, L"MouseController::UpdateFromInternalInput diffXY(%d,%d)", diffXaxis, diffYaxis);
 
         if (pointScreen.x != m_LastMousePoint.x || pointScreen.y != m_LastMousePoint.y)
         {
             if (m_pControllerManager != nullptr)
             {
                 m_pControllerManager->SendControllerEvent(m_EventIDs[DEVICE_MOUSE_POS_INDEX].c_str(), &ev);
+                //AMFTraceInfo(AMF_FACILITY, L"MouseController: SendControllerEvent ev.value.XY(%5.4f,%5.4f)", ev.value.floatPoint2DValue.x, ev.value.floatPoint2DValue.y);
             }
-
-            // To Do.. Transport layer to send tracking parameters // WindowPoint diff = { diffXaxis , diffYaxis };
-            /*if (m_pHost->m_bStereo == true)
-            {
-                WindowPoint diff = { diffXaxis , diffYaxis };
-                m_pHost->m_pHMD->SendHMDTrackingInfo(diff);
-            }*/
 
             m_LastMousePoint.x = pointScreen.x;
             m_LastMousePoint.y = pointScreen.y;
         }
+
         return AMF_OK;
     }
 

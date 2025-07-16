@@ -76,20 +76,27 @@ namespace ssdk::util
 
     void ClientStatsManager::IncrementDecoderQueueDepth(amf_pts pts)
     {
+        amf::AMFLock lock(&m_Guard);
         amf_pts now = amf_high_precision_clock();;
         m_DecoderQueueTimes[pts] = now;
+        ++m_DecoderQueueDepth;
     };
 
     void ClientStatsManager::DecrementDecoderQueueDepth(amf_pts pts)
     {
         amf_pts ptsEnd = amf_high_precision_clock();;
 
+        amf::AMFLock lock(&m_Guard);
         DecoderQueueTimes::const_iterator element = m_DecoderQueueTimes.find(pts);
         if (element != m_DecoderQueueTimes.end())
         {
             amf_pts ptsStart = element->second;
             m_DecoderLatencyHistory.Add((float)(ptsEnd - ptsStart) / AMF_MILLISECOND);
             m_DecoderQueueTimes.erase(element);
+        }
+        if (--m_DecoderQueueDepth > 0)
+        {
+            SendStatistics();
         }
     };
 
@@ -136,34 +143,47 @@ namespace ssdk::util
     {
         amf_pts now = amf_high_precision_clock();;
 
+        float fullLatency = 0;
+        float clientLatency = 0;
+        float serverLatency = 0;
+        float encoderLatency = 0;
+        float networkLatency = 0;
+        float decoderLatency = 0;
+        float decrypt = 0;
+        int32_t decoderQueueSize = 0;
+        float AVDesync = 0;
+        float frameDurationAvg = 0;
+        float framerate = 0;
+
         if (now - m_LastSendStatsTime > STATISTICS_SEND_PERIOD_SECONDS * AMF_SECOND)
         {
             ssdk::transport_common::ClientTransport* transport = nullptr;
             {
                 amf::AMFLock lock(&m_Guard);
                 transport = m_Transport;
-            }
-
-            if (transport != nullptr)
-            {
-                float fullLatency = m_FullLatencyHistory.GetAverageAndClear();
-                float clientLatency = m_ClientLatencyHistory.GetAverageAndClear();
-                float serverLatency = m_ServerLatencyHistory.GetAverageAndClear();
-                float encoderLatency = m_EncoderLatencyHistory.GetAverageAndClear();
-                float networkLatency = fullLatency - clientLatency - serverLatency;
-                float decoderLatency = m_DecoderLatencyHistory.GetAverageAndClear();
-                float decrypt = m_DecryptHistory.GetAverageAndClear();
-                int32_t decoderQueueSize = static_cast<int32_t>(m_DecoderQueueTimes.size());
-                float AVDesync = m_AVDesyncHistory.GetAverageAndClear();
-                float frameDurationAvg = m_FrameDurationHistory.GetAverageAndClear();
-                float framerate = 0;
+                fullLatency = m_FullLatencyHistory.GetAverageAndClear();
+                clientLatency = m_ClientLatencyHistory.GetAverageAndClear();
+                serverLatency = m_ServerLatencyHistory.GetAverageAndClear();
+                encoderLatency = m_EncoderLatencyHistory.GetAverageAndClear();
+                networkLatency = fullLatency - clientLatency - serverLatency;
+                decoderLatency = m_DecoderLatencyHistory.GetAverageAndClear();
+                decrypt = m_DecryptHistory.GetAverageAndClear();
+                decoderQueueSize = m_DecoderQueueDepth;
+                AVDesync = m_AVDesyncHistory.GetAverageAndClear();
+                frameDurationAvg = m_FrameDurationHistory.GetAverageAndClear();
+                framerate = 0;
                 if (frameDurationAvg != 0)
                 {
                     framerate = 1 / frameDurationAvg;
                 }
+            }
 
+            if (transport != nullptr)
+            {
                 StatsSnapshotImpl statsSnapshotImpl(fullLatency, clientLatency, serverLatency, encoderLatency, networkLatency, decoderLatency, decrypt, decoderQueueSize, AVDesync, framerate);
                 transport->SendStats(ssdk::transport_common::DEFAULT_STREAM, statsSnapshotImpl);
+                AMFTraceInfo(AMF_FACILITY, L"Latency (ms): full %5.2f, client %5.2f, decoder %5.2f (queue depth %d frames), server %5.2f, encoder %5.2f, network %5.2f, Frame rate: %5.2f fps",
+                             fullLatency, clientLatency, decoderLatency, decoderQueueSize, serverLatency, encoderLatency, networkLatency, framerate);
             }
             else
             {

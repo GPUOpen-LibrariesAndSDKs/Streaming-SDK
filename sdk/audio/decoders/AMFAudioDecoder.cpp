@@ -38,6 +38,12 @@
 
 static constexpr const wchar_t* AMF_FACILITY = L"ssdk::audio::AMFAudioDecoder";
 
+#if defined(_WIN32)
+    #define FFMPEG_HELPER_DLL_NAME    FFMPEG_DLL_NAME
+#elif defined(__linux)
+    #define FFMPEG_HELPER_DLL_NAME    L"libamf-component-ffmpeg64.so"
+#endif
+
 namespace ssdk::audio
 {
     AMFAudioDecoder::AMFAudioDecoder(amf::AMFContext* context, int codecID) :
@@ -71,7 +77,7 @@ namespace ssdk::audio
         res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFAudioDecoder_Android_AAC, &decoder);
         AMF_RETURN_IF_FAILED(result, L"CreateComponent : AMFAudioDecoder_Android_AAC FAILED");
 #else
-        result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_DECODER, &decoder);
+        result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_DECODER, &decoder);
         AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed", FFMPEG_AUDIO_DECODER);
 #endif
 

@@ -36,8 +36,14 @@
 
 namespace ssdk::ctls
 {
+#if defined(_WIN32)
     MouseController::MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter,
         ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, amf_handle hWnd, bool useRelativeInput) :
+#else
+    MouseController::MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter,
+        ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, Display* dpy, amf_handle hWnd, bool useRelativeInput) :
+        m_dpy(new XDisplay(dpy)),
+#endif
         ControllerBase(pControllerManager),
         m_pVideoPresenter(pVideoPresenter),
         m_pVideoPipeline(pVideoPipeline),
@@ -57,6 +63,10 @@ namespace ssdk::ctls
 
         m_pConfig = std::make_shared<MouseControllerConfig>();
         m_pConfig->Attach(this);
+
+#if defined(__linux)
+        Init();
+#endif
     }
 
     //-------------------------------------------------------------------------------------------------

@@ -59,6 +59,9 @@ namespace ssdk::ctls
         bool RemoveController(ControllerBase::Ptr pController);
 
         bool ProcessMessage(WindowMessage msg);
+#if !defined(_WIN32)
+        bool ProcessMessage(ExtWindowMessage msg);
+#endif
 
         void SetClientTransport(ssdk::transport_common::ClientTransport::Ptr pClientTransport);
         ssdk::transport_common::ClientTransport::Ptr GetClientTransport() { return m_pClientTransport; };

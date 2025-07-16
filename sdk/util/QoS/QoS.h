@@ -66,11 +66,13 @@ namespace ssdk::util
         enum class QoSPanic
         {
             NO_CLIENT_DATA,                   //  QoS Panic mode was triggered by the lack of data from the client
-            TOO_MANY_IDR_REQUESTS             //  QoS Panic mode was triggered by exceeding the IDR frame requests threshold
+            TOO_MANY_IDR_REQUESTS,            //  QoS Panic mode was triggered by exceeding the IDR frame requests threshold
+            CLIENT_CANT_KEEP_UP               //  QoS Panic mode was triggered by the client being unable to keep up
         };
 
         enum class QoSStrategy
         {
+            ADJUST_NONE,                                //  QoS is off
             ADJUST_FRAMERATE,                           //  Allow QoS to adjust frame rate
             ADJUST_VIDEOBITRATE,                        //  Allow QoS to adjust video bitrate
             ADJUST_BOTH                                 //  Allow QoS to adjust frame rate and video bitrate
@@ -128,8 +130,8 @@ namespace ssdk::util
 
     private:
         void ResetCounters();
-        float AdjustFramerate(float step);
-        int64_t AdjustVideoBitrate(int64_t current, int64_t step);
+        void AdjustFramerate(float targetFps);
+        void AdjustVideoBitrate(int64_t targetBitrate);
         void NotifyCallback(QoSEvent event, const amf::AMFVariantStruct& value);
         
     private:
@@ -139,39 +141,40 @@ namespace ssdk::util
         bool                    m_Initialized = false;
         InitParams              m_InitParams;
 
-        typedef ValueHistory<float, 4> FramerateHistory;
-        typedef ValueHistory<int64_t, 4> BitrateHistory;
+        amf_pts                     m_FirstFrameTime = 0;
+        amf_pts                     m_LastFrameTime = 0;
 
-        amf_pts                 m_FirstFrameTime = 0;
-        amf_pts                 m_LastFrameTime = 0;
-        float                   m_Framerate = 0;
-        float                   m_EncoderTargetFramerate = 0;
-        FramerateHistory        m_FramerateHistory;
-        amf_pts                 m_LastFpsAdjustmentTime = 0;
+        float                       m_Framerate = 0;
+        ValueHistory<float, 10>     m_FramerateHistory;
+        amf_pts                     m_LastFpsAdjustmentTime = 0;
 
-        int64_t                 m_AccumulatedBandwidth = 0;
+        int64_t                     m_AccumulatedBandwidth = 0;
 
-        BitrateHistory          m_BitrateHistory;
-        int64_t                 m_Bitrate = 0;
-        amf_pts                 m_LastVideoBitrateAdjustmentTime = 0;
+        ValueHistory<int64_t, 4>    m_BitrateHistory;
+        int64_t                     m_Bitrate = 0;
+        amf_pts                     m_LastVideoBitrateAdjustmentTime = 0;
 
-        int64_t                 m_EncoderQueueDepth = 0;
-        bool                    m_Panic = false;
-        amf_pts                 m_LastPanicTime = 0;    
+        int64_t                     m_EncoderQueueDepth = 0;
+        bool                        m_Panic = false;
+        amf_pts                     m_LastPanicTime = 0;    
         
         // collected session stats updated in UpdateSessionStats  
         class SessionInfo
         {
         public:
-            FramerateHistory m_FramerateHistory;
-            amf_int64 m_ForceIDRReqCount = 0;
-            amf_pts m_ForceIDRReqCountUpdateTime = 0;
+            ValueHistory<float, 1>      m_FramerateHistory;
+            amf_int64                   m_ForceIDRReqCount = 0;
+            amf_pts                     m_ForceIDRReqCountUpdateTime = 0;
+            int64_t                     m_DecoderQueueDepth = 0;
+            int                         m_DecoderQueueOverflowCnt = 0;
+            float                       m_DecoderQueueOverflowFps = 0;
+            int                         m_CongestionCnt = 0;
+            int64_t                     m_CongestionBitrate = 0;
         };
         
         typedef std::map<transport_common::SessionHandle, SessionInfo> SessionInfoMap;
         SessionInfoMap m_SessionInfoMap;
         float                       m_WorstSendTime = 0;
         ValueHistory<float, 5>      m_WorstSendTimeHistory;
-        bool                        m_DecoderQueueDepthExcess = false;
     };
 }

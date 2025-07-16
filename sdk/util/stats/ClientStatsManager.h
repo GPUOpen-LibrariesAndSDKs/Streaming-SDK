@@ -89,13 +89,14 @@ namespace ssdk::util
 
     public:
         ClientStatsManager();
-        ~ClientStatsManager() {};
         ClientStatsManager(const ClientStatsManager&) = delete;
         ClientStatsManager& operator=(const ClientStatsManager&) = delete;
+        ~ClientStatsManager() = default;
+
         void SetTransport(ssdk::transport_common::ClientTransport* transport);
         void Init();
         void Clear();
-        
+
         void IncrementDecoderQueueDepth(amf_pts pts);
         void DecrementDecoderQueueDepth(amf_pts pts);
         void UpdateFullLatencyAndFramerate(amf_pts fullLatencyPts);
@@ -109,7 +110,7 @@ namespace ssdk::util
     private:
         mutable amf::AMFCriticalSection m_Guard;
         ssdk::transport_common::ClientTransport* m_Transport = nullptr;
-        
+
         typedef ssdk::util::ValueAverage<float> FloatValueAverage;
         FloatValueAverage m_FrameDurationHistory;
         FloatValueAverage m_FullLatencyHistory;
@@ -121,6 +122,7 @@ namespace ssdk::util
         FloatValueAverage m_AVDesyncHistory;
         typedef std::map<amf_pts, amf_pts> DecoderQueueTimes;
         DecoderQueueTimes m_DecoderQueueTimes;
+        int32_t m_DecoderQueueDepth = 0;
 
         amf_pts m_LastFrameTime = 0;
         amf_pts m_LastSendStatsTime = 0;

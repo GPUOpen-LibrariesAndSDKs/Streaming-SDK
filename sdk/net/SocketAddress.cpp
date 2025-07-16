@@ -39,6 +39,9 @@ THE SOFTWARE.
 #include "Socket.h"
 #include <sstream>
 #include <iomanip>
+#ifdef __linux
+#include <ifaddrs.h>
+#endif
 
 namespace ssdk::net
 {
@@ -91,6 +94,12 @@ namespace ssdk::net
         {
             return sizeof(sockaddr_in);
         }
+#ifdef __linux
+        if (m_SockAddr.ss_family == AF_UNIX)
+        {
+            return sizeof(sockaddr_un);
+        }
+#endif
         return sizeof(sockaddr);
     }
 
@@ -215,7 +224,11 @@ namespace ssdk::net
         else
         {
             reinterpret_cast<struct sockaddr_in&>(m_SockAddr).sin_addr.s_addr = INADDR_ANY;
+#if defined(__APPLE__) || defined(__linux)
+            reinterpret_cast<struct sockaddr_in&>(m_SockAddr).sin_port = htons(port);
+#else
             reinterpret_cast<struct sockaddr_in&>(m_SockAddr).sin_port = ::htons(port);
+#endif
         }
     }
 
@@ -291,12 +304,20 @@ namespace ssdk::net
 
     unsigned short Socket::IPv4Address::GetPort() const
     {
+#if defined(__APPLE__) || defined(__linux)
+        return ntohs(reinterpret_cast<const sockaddr_in&>(m_SockAddr).sin_port);
+#else
         return ::ntohs(reinterpret_cast<const sockaddr_in&>(m_SockAddr).sin_port);
+#endif
     }
 
     void Socket::IPv4Address::SetIPPort(unsigned short port)
     {
+#if defined(__APPLE__) || defined(__linux)
+        reinterpret_cast<sockaddr_in&>(m_SockAddr).sin_port = htons(port);
+#else
         reinterpret_cast<sockaddr_in&>(m_SockAddr).sin_port = ::htons(port);
+#endif
     }
 
     std::string Socket::IPv4Address::GetAddressAsString() const
@@ -310,4 +331,134 @@ namespace ssdk::net
     {
         reinterpret_cast<sockaddr_in&>(m_SockAddr).sin_addr.s_addr = inet_addr(address.c_str());
     }
+
+#ifdef __linux
+    std::string Socket::IPv4Address::GetInterfaceName() const
+    {
+        struct ifaddrs* addrs;
+        if (getifaddrs(&addrs) != 0)
+        {
+            return "";
+        }
+        std::string iface;
+        for (struct ifaddrs *addr = addrs; addr != nullptr; addr = addr->ifa_next)
+        {
+            if (addr->ifa_addr == nullptr || addr->ifa_addr->sa_family != (sa_family_t)AddressFamily::ADDR_IP)
+            {
+                continue;
+            }
+            uint32_t ifaceAddr = ((sockaddr_in*)addr->ifa_addr)->sin_addr.s_addr;
+            if (ifaceAddr == GetAddress().s_addr)
+            {
+                iface = addr->ifa_name;
+                break;
+            }
+        }
+        freeifaddrs(addrs);
+        return iface;
+    }
+#endif
+
+    //  *************************************** Socket::UnixDomainAddress *********************************************
+#if defined(__linux)
+    const wchar_t* const Socket::UnixDomainAddress::m_Realm = L"Socket::UnixDomainAddress";
+        Socket::UnixDomainAddress::UnixDomainAddress()
+    {
+        m_SockAddr.ss_family = AF_UNIX;
+
+    }
+
+    Socket::UnixDomainAddress::UnixDomainAddress(const std::string& address)
+    {
+        m_SockAddr.ss_family = AF_UNIX;
+        SetAddress(address);
+    }
+
+    Socket::UnixDomainAddress::UnixDomainAddress(const UnixDomainAddress& other) : Socket::Address::Address(other)
+    {
+        operator=(other);
+    }
+
+    Socket::UnixDomainAddress::UnixDomainAddress(const Address& other)
+    {
+        operator=(other);
+    }
+
+    Socket::UnixDomainAddress::UnixDomainAddress(const sockaddr& other)
+    {
+        operator=(other);
+    }
+
+    Socket::UnixDomainAddress::UnixDomainAddress(const sockaddr_un& other)
+    {
+        operator=(other);
+    }
+
+    Socket::UnixDomainAddress& Socket::UnixDomainAddress::operator=(const UnixDomainAddress& other)
+    {
+        return operator=(other.ToSockAddr_Un());
+    }
+
+    Socket::UnixDomainAddress& Socket::UnixDomainAddress::operator=(const Address& other)
+    {
+        return operator=(other.ToSockAddr());
+    }
+
+    Socket::UnixDomainAddress& Socket::UnixDomainAddress::operator=(const sockaddr& other)
+    {
+        if (other.sa_family != AF_UNIX)
+        {
+            AMFTraceError(m_Realm, L"Invalid address conversion to unix domain address");
+            return *this;
+        }
+        return operator=(reinterpret_cast<const sockaddr_un&>(other));
+    }
+
+    Socket::UnixDomainAddress& Socket::UnixDomainAddress::operator=(const sockaddr_un& other)
+    {
+        memcpy(reinterpret_cast<struct sockaddr_un*>(&m_SockAddr), &other, sizeof(sockaddr_un));
+        return *this;
+    }
+
+    bool Socket::UnixDomainAddress::operator==(const sockaddr& other) const
+    {
+        return (m_SockAddr.ss_family == other.sa_family && strcmp(reinterpret_cast<const sockaddr_un&>(m_SockAddr).sun_path, reinterpret_cast<const sockaddr_un&>(other).sun_path) == 0);
+    }
+
+    bool Socket::UnixDomainAddress::operator==(const sockaddr_un& other) const
+    {
+        return (m_SockAddr.ss_family == other.sun_family && strcmp(reinterpret_cast<const sockaddr_un&>(m_SockAddr).sun_path, other.sun_path) == 0);
+    }
+
+    bool Socket::UnixDomainAddress::operator==(const Address& other) const
+    {
+        return operator==(other.ToSockAddr());
+    }
+
+    bool Socket::UnixDomainAddress::operator==(const UnixDomainAddress& other) const
+    {
+        return operator==(other.ToSockAddr_Un());
+    }
+
+    std::string Socket::UnixDomainAddress::GetAddressAsString() const
+    {
+        const char * path = reinterpret_cast<const sockaddr_un&>(m_SockAddr).sun_path;
+        return std::string(path + 1);
+    }
+
+    void Socket::UnixDomainAddress::SetAddress(const std::string& address)
+    {
+        sockaddr_un& sockAddr = reinterpret_cast<sockaddr_un&>(m_SockAddr);
+        char * path = sockAddr.sun_path;
+        strncpy(path, address.c_str(), sizeof(sockAddr.sun_path)-1);
+        path[sizeof(sockAddr.sun_path)-1] = '\0';
+
+        if (address.length() > 0 && address[0] == ':')
+        {
+            path[0] = '\0'; //Linux abstract socket address
+        }
+    }
+
+#endif
+
 }

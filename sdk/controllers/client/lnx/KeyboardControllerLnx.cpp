@@ -34,8 +34,8 @@
 #if defined(__linux)
 #include "../KeyboardController.h"
 #include "../ControllerManager.h"
-#include "tbls/WindowsToX11KeyTable.h"
-#include "tbls/X11ToWindowsScanCodeTable.h"
+#include "controllers/tbls/WindowsToX11KeyTable.h"
+#include "controllers/tbls/X11ToWindowsScanCodeTable.h"
 
 namespace ssdk::ctls
 {
@@ -125,7 +125,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT KeyboardController::ReleaseModifiersKey()
+    void KeyboardController::ReleaseModifiers()
     {
         std::vector<int> modifierKeys{ XK_Shift_L, XK_Shift_R, XK_Control_L, XK_Control_R, XK_Alt_L, XK_Alt_R };
         for (auto& keySym : modifierKeys)
@@ -172,8 +172,6 @@ namespace ssdk::ctls
                 }
             }
         }
-
-        return AMF_OK;
     }
 }// namespace ssdk::ctls
 #endif

@@ -40,7 +40,7 @@ namespace ssdk::ctls
     struct CtlEvent
     {
         amf::AMFVariantStruct value;
-        uint64_t              flags;
+        uint64_t              flags{0};
     };
 
     //----------------------------------------------------------------------------------------------

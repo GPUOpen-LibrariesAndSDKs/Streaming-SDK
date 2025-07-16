@@ -40,6 +40,12 @@ THE SOFTWARE.
 
 static constexpr const wchar_t* const AMF_FACILITY = L"ssdk::audio::AudioOutput";
 
+#if defined(_WIN32)
+    #define FFMPEG_HELPER_DLL_NAME    FFMPEG_DLL_NAME
+#elif defined(__linux)
+    #define FFMPEG_HELPER_DLL_NAME    L"libamf-component-ffmpeg64.so"
+#endif
+
 namespace ssdk::audio
 {
     AudioOutput::AudioOutput(TransmitterAdapter& transportAdapter, AudioEncodeEngine::Ptr encoder, amf::AMFContext* context) :
@@ -80,7 +86,7 @@ namespace ssdk::audio
                 actualOutputLayout = m_Encoder->GetLayout();
             }
         }
-        if (inputSamplingRate != outputSamplingRate || inputChannels != outputChannels || inputLayout != outputLayout)
+        if (inputSamplingRate != outputSamplingRate || inputChannels != outputChannels || inputLayout != outputLayout || inputFormat != actualOutputFormat)
         {   //  Input parameters do not match the output parameters, need an audio converter to resample
             result = InitializeConverter(inputFormat, inputSamplingRate, inputChannels, inputLayout, actualOutputFormat, actualOutputSamplingRate, actualOutputChannels, actualOutputLayout);
         }
@@ -128,7 +134,7 @@ namespace ssdk::audio
     AMF_RESULT AudioOutput::InitializeConverter(amf::AMF_AUDIO_FORMAT inputFormat, int32_t inputSamplingRate, int32_t inputChannels, int32_t inputLayout, amf::AMF_AUDIO_FORMAT outputFormat, int32_t outputSamplingRate, int32_t outputChannels, int32_t outputLayout)
     {
         amf::AMFComponentPtr converter;
-        AMF_RESULT result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &converter);
+        AMF_RESULT result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &converter);
         AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed", FFMPEG_AUDIO_CONVERTER);
 
         //  Configure converter input

@@ -127,6 +127,15 @@ namespace ssdk::ctls
         }
     }
 
+    //-------------------------------------------------------------------------------------------------
+    void MouseCursorLnx::OnCursorHidden()
+    {
+        amf::AMFLock lock(&m_cs);
+        XDisplayPtr dpy(m_dpy);
+        XDefineCursor(dpy, (Window)m_hWindow, m_emptyCursor);
+        m_pCursor = nullptr;
+    }
+
 } // namespace ssdk::ctls
 
 #endif // __linux

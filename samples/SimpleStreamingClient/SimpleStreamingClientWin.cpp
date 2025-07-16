@@ -275,20 +275,10 @@ bool SimpleStreamingClientWin::OnAppInit()
     result = RedirectIOToConsole();
     if (result == true)
     {
-        AMF_RESULT amfRes = m_Device.Init(0, true, true); // on windows decoder will run via DX11
-        if (amfRes != AMF_OK)
+        AMF_RESULT amfRes = AMF_OK;
+        if (m_Context != nullptr)
         {
-            AMFTraceInfo(AMF_FACILITY, L"Non-AMD GPU detected, trying to use AMFLite...");
-            amfRes = m_Device.Init(0, true, false); // try to use non-AMD GPU
-        }
-        if (amfRes != AMF_OK)
-        {
-            AMFTraceError(AMF_FACILITY, L"Failed to initialize AMF DX11 device. Check AMD graphics driver installation or, if running on a non-AMD platform, ensure that amfrt64.dll and amfrtlte64.dll are next to the executable or in the PATH");
-            result = false;
-        }
-        else if (m_Context != nullptr)
-        {
-            if ((amfRes = m_Context->InitDX11(m_Device.GetDevice())) != AMF_OK)
+            if ((amfRes = m_Context->InitDX11(nullptr)) != AMF_OK)
             {
                 AMFTraceError(AMF_FACILITY, L"Failed to initialize AMFContext for DX11. Check AMD graphics driver installation or, if running on a non-AMD platform, ensure that amfrt64.dll and amfrtlte64.dll are next to the executable or in the PATH");
                 result = false;
@@ -356,7 +346,6 @@ void SimpleStreamingClientWin::OnAppTerminate()
             m_Context->Terminate();
             AMFTraceDebug(AMF_FACILITY, L"OnAppTerminate(): AMFContext terminated");
         }
-        m_Device.Terminate();
         AMFTraceDebug(AMF_FACILITY, L"OnAppTerminate(): DX11 device terminated");
         m_DX11Initialized = false;
         m_MemoryType = amf::AMF_MEMORY_TYPE::AMF_MEMORY_UNKNOWN;

@@ -1,1 +1,1 @@
-prebuilt/Windows filter=lfs diff=lfs merge=lfs -text
+prebuilt/ filter=lfs diff=lfs merge=lfs -text

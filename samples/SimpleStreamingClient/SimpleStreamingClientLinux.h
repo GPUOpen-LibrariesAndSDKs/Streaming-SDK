@@ -38,13 +38,14 @@ THE SOFTWARE.
 #ifndef _WIN32
 
 #include "SimpleStreamingClient.h"
+#include "amf/public/samples/CPPSamples/common/DeviceVulkan.h"
 
 class SimpleStreamingClientLinux : public SimpleStreamingClient
 {
 public:
     SimpleStreamingClientLinux(const char** cmdLine);
+    virtual ~SimpleStreamingClientLinux() override;
 
-    virtual bool Init() override;
     virtual void RunMessageLoop() override;
     virtual void OnFrameUpdated();
 
@@ -52,11 +53,28 @@ public:
     virtual bool InitCursor() override;
 
 protected:
+    virtual bool OnAppInit() override;
+    virtual void OnAppTerminate() override;
+
+    bool ProcessMessage(WindowMessage msg);
+    bool ProcessMessage(ExtWindowMessage msg);
+
+    void InitPresenter();
+    void TerminatePresenter();
+
+    void TerminateVulkan();
+
+    void CheckForResize();
+    void ReleaseKeyModifiers();
+    
     void CreateGameControllers();
     virtual std::string GenerateGUID() const override;
 
 private:
-    amf_handle m_hMainWindow{ 0 };
-    amf_handle m_hDisplayInst{ 0 };
+    amf_handle      m_hMainWindow{ 0 };
+    amf_handle      m_hDisplayInst{ 0 };
+    int             m_xiOpcode{ 0 };
+    Atom            m_wmDeleteWindow{ 0 };
+    bool            m_bOnlyTouchDevice{ false };
 };
 #endif

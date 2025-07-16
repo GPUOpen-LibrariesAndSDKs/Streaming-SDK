@@ -34,6 +34,7 @@ THE SOFTWARE.
 */
 
 #include "QoS.h"
+#include "amf/public/common/TraceAdapter.h"
 
 static constexpr const wchar_t* const AMF_FACILITY = L"ssdk::util::QoS";
 
@@ -44,8 +45,6 @@ namespace ssdk::util
         amf::AMFLock    lock(&m_Guard);
         if (m_Initialized == false)
         {
-            ResetCounters();
-
             m_InitParams = initParams;
             m_Initialized = true;
         }
@@ -71,219 +70,253 @@ namespace ssdk::util
         {
             return AMF_NOT_INITIALIZED;
         }
-        
-        m_EncoderQueueDepth = videoOutputStats.encoderQueueDepth;
-        m_Bitrate = videoOutputStats.encoderTargetBitrate;
-        m_EncoderTargetFramerate = videoOutputStats.encoderTargetFramerate;
-        int64_t bandwidth = videoOutputStats.bandwidth;
 
-        amf_pts now = amf_high_precision_clock();
-        if (m_FirstFrameTime == 0)
+        if (m_SessionInfoMap.size() > 0)
         {
-            m_FirstFrameTime = now;
-            m_LastFrameTime = now;
-            m_Framerate = m_EncoderTargetFramerate;
-        }
-        else
-        {   
-            float secondsBetweenFrames = (float)(now - m_LastFrameTime) / AMF_SECOND;
-            m_LastFrameTime = now;
-            m_FramerateHistory.AddValue(1 / secondsBetweenFrames, now);
-            m_Framerate = m_FramerateHistory.GetAverage();
+            m_EncoderQueueDepth = videoOutputStats.encoderQueueDepth;
+            int64_t bandwidth = videoOutputStats.bandwidth;
 
-            m_AccumulatedBandwidth += bandwidth;
-            amf_pts lastBitrateMeasureTime = now - m_BitrateHistory.GetLastUpdateTime();
-            if (lastBitrateMeasureTime > AMF_SECOND)
-            { 
-                
-                int64_t bitrate = (AMF_SECOND * m_AccumulatedBandwidth) / lastBitrateMeasureTime;
-                m_BitrateHistory.AddValue(bitrate, now);
-                m_AccumulatedBandwidth = 0;
-            }
-        }
-        
-        
-        if (m_LastFpsAdjustmentTime == 0 || m_LastVideoBitrateAdjustmentTime == 0)
-        {
-            // handle fist call
-            m_LastVideoBitrateAdjustmentTime = m_LastFpsAdjustmentTime = now;
-        }
-        else
-        {
-            QoSPanic reasonForPanic = QoSPanic::NO_CLIENT_DATA;
-
-            bool lowerVideoBitrate = false;
-            bool lowerFrameRate = false;
-            bool panic = false;
-
-            if (now - m_FirstFrameTime > m_InitParams.timeBeforePanic && m_SessionInfoMap.empty() == true && m_Panic == false)
+            amf_pts now = amf_high_precision_clock();
+            if (m_FirstFrameTime == 0)
             {
-                //  We've started streaming, but not receiving any stats from clients for too long - this only happens at the beginning
-                reasonForPanic = QoSPanic::NO_CLIENT_DATA;
-                panic = true;   
-                lowerVideoBitrate = true;
-                lowerFrameRate = true;
+                m_FirstFrameTime = now;
+                m_LastFrameTime = now;
+                m_Bitrate = videoOutputStats.encoderTargetBitrate;
+                m_Framerate = videoOutputStats.encoderTargetFramerate;
             }
-            else    
+            else
             {
-                // if any client's force IDR request count exceeds panicThresholdIDR, lower bitrate and panic
-                // if any client's force IDR request count exceeds thresholdIDR, lower bitrate
-                for (SessionInfoMap::const_iterator it = m_SessionInfoMap.begin(); it != m_SessionInfoMap.end(); ++it)
+                float secondsBetweenFrames = (float)(now - m_LastFrameTime) / AMF_SECOND;
+                m_LastFrameTime = now;
+                m_FramerateHistory.AddValue(1 / secondsBetweenFrames, now);
+                if (m_FramerateHistory.IsHistoryFull() == true)
                 {
-                    if (it->second.m_ForceIDRReqCount > m_InitParams.panicThresholdIDR)
-                    {   //  The number of Force IDR requests exceeded panic threshold
-                        panic = true;
-                        lowerVideoBitrate = true;
-                        lowerFrameRate = true;
-                        reasonForPanic = QoSPanic::TOO_MANY_IDR_REQUESTS;
-                        break;
-                    }
-                    else if (it->second.m_ForceIDRReqCount > m_InitParams.thresholdIDR)
-                    {   //  Too many IDR requests, but not enough to panic yet
-                        lowerVideoBitrate = true;
-                        lowerFrameRate = true;
-                    }
+                    m_Framerate = m_FramerateHistory.GetAverage();
                 }
-                if (panic == false) //  No need to check this when we're already panicing
+
+                m_AccumulatedBandwidth += bandwidth;
+                amf_pts lastBitrateMeasureTime = now - m_BitrateHistory.GetLastUpdateTime();
+                if (lastBitrateMeasureTime > AMF_SECOND)
                 {
+                    int64_t bitrate = (AMF_SECOND * m_AccumulatedBandwidth) / lastBitrateMeasureTime;
+                    m_BitrateHistory.AddValue(bitrate, now);
+                    m_AccumulatedBandwidth = 0;
+                }
+            }
 
-                    float txAverage = m_FramerateHistory.GetAverage();
-                    if (m_Framerate > txAverage)
-                    {
-                        m_Framerate = txAverage;
-                    }
 
-                    for (SessionInfoMap::const_iterator it = m_SessionInfoMap.begin(); it != m_SessionInfoMap.end(); ++it)
+            if (m_LastFpsAdjustmentTime == 0 || m_LastVideoBitrateAdjustmentTime == 0)
+            {
+                // handle fist call
+                m_LastVideoBitrateAdjustmentTime = m_LastFpsAdjustmentTime = now;
+            }
+            else
+            {
+                QoSPanic reasonForPanic = QoSPanic::NO_CLIENT_DATA;
+
+                bool lowerVideoBitrate = false;
+                int64_t targetBitrate = videoOutputStats.encoderTargetBitrate;
+                bool lowerFrameRate = false;
+                float targetFramerate = videoOutputStats.encoderTargetFramerate;
+                bool panic = false;
+                bool immediate = false;
+
+                if (now - m_FirstFrameTime > m_InitParams.timeBeforePanic && m_SessionInfoMap.empty() == true && m_Panic == false)
+                {
+                    //  We've started streaming, but not receiving any stats from clients for too long - this only happens at the beginning
+                    reasonForPanic = QoSPanic::NO_CLIENT_DATA;
+                    panic = true;
+                    lowerVideoBitrate = true;
+                    lowerFrameRate = true;
+                    AMFTraceWarning(AMF_FACILITY, L"Have not received statistics from the client at the beginning of the stream, QoS is panicing");
+                }
+                else
+                {
+                    if (panic == false) //  No need to check this when we're already panicing
                     {
-                        const FramerateHistory& sessionFramerateHistory = it->second.m_FramerateHistory;
-                        if (sessionFramerateHistory.IsHistoryFull() == true)
+                        static constexpr const int MAX_DECODER_OVERFLOW_EVENTS = 5;
+                        static constexpr const int MAX_CONGESTION_EVENTS = 5;
+                        for (SessionInfoMap::iterator it = m_SessionInfoMap.begin(); it != m_SessionInfoMap.end(); ++it)
                         {
-                            if (now - sessionFramerateHistory.GetLastUpdateTime() > m_InitParams.timeBeforePanic)
-                            {
+                            // if any client's force IDR request count exceeds panicThresholdIDR, lower bitrate and panic
+                            // if any client's force IDR request count exceeds thresholdIDR, lower bitrate
+                            if (it->second.m_ForceIDRReqCount > m_InitParams.panicThresholdIDR)
+                            {   //  The number of Force IDR requests exceeded panic threshold
                                 panic = true;
-                                reasonForPanic = QoSPanic::NO_CLIENT_DATA;
                                 lowerVideoBitrate = true;
                                 lowerFrameRate = true;
+                                reasonForPanic = QoSPanic::TOO_MANY_IDR_REQUESTS;
+                                AMFTraceWarning(AMF_FACILITY, L"Client is sending too many key frame repeat requests, QoS is panicing, bandwidth %5.2f Mbps", float(m_BitrateHistory.GetAverage()) / 1024 / 1024);
                                 break;
                             }
-                            
-                            float sessionFramerate = sessionFramerateHistory.GetAverage();
-                            if (m_Framerate > sessionFramerate)
-                            {
-                                m_Framerate = sessionFramerate;
-                            }
-                            else if (sessionFramerate < (sessionFramerateHistory.GetAverage() * 0.8) && sessionFramerate != 0)
-                            {
-                                lowerVideoBitrate = true;
-                            }
-                        }
-                    }
-                    
-                    if (panic == false)
-                    {
-                        if (m_Framerate != 0 && lowerVideoBitrate == false)
-                        {
-                            float frameTime = 1000 / m_Framerate;
-                            if (m_WorstSendTime > (frameTime * 2.0f) ||
-                                (m_WorstSendTimeHistory.IsHistoryFull() == true && m_WorstSendTimeHistory.GetAverage() > frameTime))
-                            {   //  We're seeing spikes in send() execution time, indicating frequent hiccups on the network (usually TCP) - try lowering both FPS and bitrate by 1 step 
+                            else if (it->second.m_ForceIDRReqCount > m_InitParams.thresholdIDR)
+                            {   //  Too many IDR requests, but not enough to panic yet
                                 lowerVideoBitrate = true;
                                 lowerFrameRate = true;
-                                m_WorstSendTime = 0.0f;
+                                AMFTraceInfo(AMF_FACILITY, L"Client is requesting key frames, QoS is lowering bitrate and frame rate, bandwidth %5.2f Mbps", float(m_BitrateHistory.GetAverage()) / 1024 / 1024);
+                            }
+                            if (it->second.m_DecoderQueueDepth > 0)
+                            {
+                                lowerFrameRate = true;
+                                if (it->second.m_DecoderQueueDepth > m_InitParams.maxDecoderQueueDepth)
+                                {
+                                    panic = true;
+                                    reasonForPanic = QoSPanic::CLIENT_CANT_KEEP_UP;
+                                    AMFTraceWarning(AMF_FACILITY, L"Client cannot keep up at %5.2f, decoder queue depth %lld, overflow count %d, QoS is panicing", m_Framerate, it->second.m_DecoderQueueDepth, it->second.m_DecoderQueueOverflowCnt);
+                                }
+                                if (now - m_LastFpsAdjustmentTime > m_InitParams.framerateAdjustmentPeriod / 4)
+                                {
+                                    immediate = true;
+                                    if (panic == false)
+                                    {
+                                        if (++it->second.m_DecoderQueueOverflowCnt > MAX_DECODER_OVERFLOW_EVENTS)
+                                        {
+                                            it->second.m_DecoderQueueOverflowFps = m_Framerate;
+                                            AMFTraceWarning(AMF_FACILITY, L"Client cannot keep up at %5.2f, decoder queue depth %lld, overflow count %d, QoS is limiting frame rate", m_Framerate, it->second.m_DecoderQueueDepth, it->second.m_DecoderQueueOverflowCnt);
+                                        }
+                                        else
+                                        {
+                                            AMFTraceWarning(AMF_FACILITY, L"Client cannot keep up at %5.2f, decoder queue depth %lld, overflow count %d, QoS is lowering frame rate", m_Framerate, it->second.m_DecoderQueueDepth, it->second.m_DecoderQueueOverflowCnt);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        it->second.m_DecoderQueueOverflowCnt = 0;
+                                    }
+                                }
+                            }
+                            auto& sessionFramerateHistory = it->second.m_FramerateHistory;
+                            if (sessionFramerateHistory.IsHistoryFull() == true)
+                            {
+                                if (now - sessionFramerateHistory.GetLastUpdateTime() > m_InitParams.timeBeforePanic)
+                                {
+                                    panic = true;
+                                    reasonForPanic = QoSPanic::NO_CLIENT_DATA;
+                                    lowerVideoBitrate = true;
+                                    lowerFrameRate = true;
+                                    AMFTraceWarning(AMF_FACILITY, L"Have not received statistics from the client, QoS is panicing");
+                                    break;
+                                }
+
+                                float sessionFramerate = sessionFramerateHistory.GetAverage();
+                                if (sessionFramerate != 0 && m_Framerate != 0 && m_Framerate > sessionFramerate * 1.15 && (now - m_LastFpsAdjustmentTime) > m_InitParams.framerateAdjustmentPeriod)
+                                {
+                                    lowerVideoBitrate = true;
+                                    sessionFramerateHistory.Clear();
+                                    AMFTraceWarning(AMF_FACILITY, L"Frame rate reported by the receiver (%5.2f) is lower than frame rate measured at the server (%5.2f), possible network congestion, QoS is lowering bitrate", sessionFramerate, m_Framerate);
+                                    if (++it->second.m_CongestionCnt > MAX_CONGESTION_EVENTS)
+                                    {
+                                        it->second.m_CongestionBitrate = m_Bitrate;
+                                        AMFTraceWarning(AMF_FACILITY, L"One or more of the clients has limited network bandwidth, QoS is limiting video bitrate to %lld to avoid congestion", targetBitrate);
+                                    }
+                                }
+                            }
+                            if (it->second.m_DecoderQueueOverflowCnt > MAX_DECODER_OVERFLOW_EVENTS && targetFramerate >= it->second.m_DecoderQueueOverflowFps)
+                            {
+                                targetFramerate = it->second.m_DecoderQueueOverflowFps - m_InitParams.framerateStep;
+                                if (targetFramerate < m_InitParams.minFramerate)
+                                {
+                                    targetFramerate = m_InitParams.minFramerate;
+                                }
+                            }
+                            if (it->second.m_CongestionCnt > MAX_CONGESTION_EVENTS && targetBitrate >= it->second.m_CongestionBitrate)
+                            {
+                                targetBitrate = it->second.m_CongestionBitrate - m_InitParams.bitrateStep;
+                                if (targetBitrate < m_InitParams.minBitrate)
+                                {
+                                    targetBitrate = m_InitParams.minBitrate;
+                                }
                             }
                         }
 
-                        if (lowerFrameRate == false && m_DecoderQueueDepthExcess == true)
-                        {   //  At least one of the clients' decoder cannot keep up
-                            lowerFrameRate = true;
-                            m_DecoderQueueDepthExcess = false;
-                        }
+                        if (panic == false)
+                        {
+                            if (m_Framerate != 0 && lowerVideoBitrate == false)
+                            {
+                                float frameTime = 1000 / m_Framerate;
+                                if (m_WorstSendTime > (frameTime * 2.0f) ||
+                                    (m_WorstSendTimeHistory.IsHistoryFull() == true && m_WorstSendTimeHistory.GetAverage() > frameTime))
+                                {   //  We're seeing spikes in send() execution time, indicating frequent hiccups on the network (usually TCP) - try lowering both FPS and bitrate by 1 step
+                                    lowerVideoBitrate = true;
+                                    lowerFrameRate = true;
+                                    m_WorstSendTime = 0.0f;
+                                    AMFTraceWarning(AMF_FACILITY, L"Send is taking too long, possible network congestion, QoS is lowering bitrate and frame rate");
+                                }
+                            }
 
-                        if (m_EncoderQueueDepth > m_InitParams.maxEncoderQueueDepth)
-                        {   //  Video Encoder overloaded
-                            lowerFrameRate = true;
-                            NotifyCallback(QoSEvent::VIDEO_ENCODER_QUEUE_THRESHOLD_EXCEEDED, amf::AMFVariant(m_EncoderQueueDepth));
-                        }
-                    }
-                }
-            }
-
-            if (panic == true)
-            {
-                if (now - m_LastPanicTime > m_InitParams.timeBeforePanic)    //  We're panicing - lower bitrate & frame rate to the minimum and wait for things to improve
-                {
-                    m_LastPanicTime = now;
-                    if (m_Panic == false)
-                    {
-                        NotifyCallback(QoSEvent::PANIC, amf::AMFVariant(int64_t(reasonForPanic)));
-                        if ((m_InitParams.strategy == QoSStrategy::ADJUST_FRAMERATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) && lowerFrameRate == true)
-                        {
-                            AdjustFramerate(-m_Framerate);
-                        }
-                        if ((m_InitParams.strategy == QoSStrategy::ADJUST_VIDEOBITRATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) && lowerVideoBitrate == true)
-                        {
-                            AdjustVideoBitrate(m_Bitrate, -m_Bitrate);
-                        }
-                        m_Panic = true;
-                    }
-                }
-            }
-            else    //  Not panicing - normal operation
-            {
-                if (m_Panic == true)
-                {
-                    m_Panic = false;
-                    NotifyCallback(QoSEvent::PANIC_ENDED, amf::AMFVariant());
-                }
-
-                //  Adjust frame rate
-                if ((m_InitParams.strategy == QoSStrategy::ADJUST_FRAMERATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) &&
-                    (((now - m_LastFpsAdjustmentTime) > m_InitParams.framerateAdjustmentPeriod)))
-                {
-                    if (lowerFrameRate == true) //  Lower FPS because the encoder cannot keep up
-                    {
-                        m_Framerate = AdjustFramerate(-m_InitParams.framerateStep);
-                    }
-                    else if (lowerVideoBitrate == true && m_InitParams.strategy == QoSStrategy::ADJUST_BOTH)
-                    {
-                        // Lowering bitrate, don't increase FPS
-                    }
-                    else    //  Increase FPS - things are improving
-                    {
-                        float fpsThreshold = m_Framerate - m_InitParams.framerateStep;
-                        if (fpsThreshold < 0)
-                        {
-                            fpsThreshold = m_Framerate * 0.8f;
-                        }
-                        if (m_Framerate >= fpsThreshold)
-                        {
-                            m_Framerate = AdjustFramerate(m_InitParams.framerateStep);
+                            if (m_EncoderQueueDepth > m_InitParams.maxEncoderQueueDepth)
+                            {   //  Video Encoder overloaded
+                                lowerFrameRate = true;
+                                immediate = true;
+                                NotifyCallback(QoSEvent::VIDEO_ENCODER_QUEUE_THRESHOLD_EXCEEDED, amf::AMFVariant(m_EncoderQueueDepth));
+                                AMFTraceWarning(AMF_FACILITY, L"Video encoder cannot keep up, QoS is lowering frame rate");
+                            }
                         }
                     }
                 }
 
-                //  Adjust video bitrate
-                if ((m_InitParams.strategy == QoSStrategy::ADJUST_VIDEOBITRATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) &&
-                    ((now - m_LastVideoBitrateAdjustmentTime) > m_InitParams.bitrateAdjustmentPeriod))
+                if (panic == true)
                 {
-                    if (lowerVideoBitrate == true) //  Either channel is bad or client cannot keep up with decryption
+                    if (now - m_LastPanicTime > m_InitParams.timeBeforePanic)    //  We're panicing - lower bitrate & frame rate to the minimum and wait for things to improve
                     {
-                        AdjustVideoBitrate(m_Bitrate, -m_InitParams.bitrateStep);
-                    }
-                    else if (lowerFrameRate == true && m_InitParams.strategy == QoSStrategy::ADJUST_BOTH)
-                    {
-                        // Lowering framerate, don't increase bitrate
-                    }
-                    else    //  Increase video bitrate - things are improving
-                    {
-                        int64_t bitrateThreshold = m_Bitrate - m_InitParams.bitrateStep;
-                        if (bitrateThreshold <= 0)// or strict <
+                        m_LastPanicTime = now;
+                        if (m_Panic == false)
                         {
-                            bitrateThreshold = int64_t(m_Bitrate * 0.8f);
+                            NotifyCallback(QoSEvent::PANIC, amf::AMFVariant(int64_t(reasonForPanic)));
+                            if ((m_InitParams.strategy == QoSStrategy::ADJUST_FRAMERATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) && lowerFrameRate == true)
+                            {
+                                AMFTraceWarning(AMF_FACILITY, L"QoS is panicing, setting frame rate to minimum");
+                                AdjustFramerate(m_InitParams.minFramerate);
+                                m_FramerateHistory.Clear();
+                            }
+                            if ((m_InitParams.strategy == QoSStrategy::ADJUST_VIDEOBITRATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) && lowerVideoBitrate == true)
+                            {
+                                AMFTraceWarning(AMF_FACILITY, L"QoS is panicing, setting bitrate to minimum, actual bandwidth %5.2f Mbps", float(m_BitrateHistory.GetAverage()) / 1024 / 1024);
+                                AdjustVideoBitrate(m_InitParams.minBitrate);
+                                m_BitrateHistory.Clear();
+                            }
+                            m_Panic = true;
                         }
-                        if (m_BitrateHistory.GetAverage() > bitrateThreshold) //  Increase the bitrate only when the actual bandwidth is approaching the current bitrate
+                    }
+                }
+                else    //  Not panicing - normal operation
+                {
+                    if (m_Panic == true)
+                    {
+                        m_Panic = false;
+                        NotifyCallback(QoSEvent::PANIC_ENDED, amf::AMFVariant());
+                        AMFTraceInfo(AMF_FACILITY, L"QoS panic ended");
+                    }
+
+                    //  Adjust frame rate
+                    if (((m_InitParams.strategy == QoSStrategy::ADJUST_FRAMERATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) &&
+                        ((now - m_LastFpsAdjustmentTime) > m_InitParams.framerateAdjustmentPeriod && m_FramerateHistory.IsHistoryFull() == true)) || immediate == true)
+                    {
+                        if (lowerFrameRate == true) //  Lower FPS because the encoder cannot keep up
                         {
-                            AdjustVideoBitrate(m_Bitrate, m_InitParams.bitrateStep);
+                            AMFTraceDebug(AMF_FACILITY, L"QoS is decreasing frame rate by %5.2f fps", m_InitParams.framerateStep);
+                            AdjustFramerate(m_Framerate - m_InitParams.framerateStep);
+                        }
+                        else if (m_Framerate < targetFramerate)   //  Increase FPS - things are improving
+                        {
+                            AMFTraceDebug(AMF_FACILITY, L"QoS is increasing frame rate by %5.2f fps", m_InitParams.framerateStep);
+                            AdjustFramerate(m_Framerate + m_InitParams.framerateStep);
+                        }
+                    }
+
+                    //  Adjust video bitrate
+                    if ((m_InitParams.strategy == QoSStrategy::ADJUST_VIDEOBITRATE || m_InitParams.strategy == QoSStrategy::ADJUST_BOTH) &&
+                        ((now - m_LastVideoBitrateAdjustmentTime) > m_InitParams.bitrateAdjustmentPeriod) && m_BitrateHistory.IsHistoryFull() == true)
+                    {
+                        if (lowerVideoBitrate == true) //  Either channel is bad or client cannot keep up with decryption
+                        {
+                            AMFTraceDebug(AMF_FACILITY, L"QoS is decreasing video bitrate by %lld bps, actual bandwidth is %5.2f Mbps", m_InitParams.bitrateStep, float(m_BitrateHistory.GetAverage()) / 1024 / 1024);
+                            AdjustVideoBitrate(m_Bitrate - m_InitParams.bitrateStep);
+                        }
+                        else if (m_Bitrate < targetBitrate)   //  Increase video bitrate - things are improving
+                        {
+                            AMFTraceDebug(AMF_FACILITY, L"QoS is increasing video bitrate by %lld bps, actual bandwidth is %5.2f Mbps", m_InitParams.bitrateStep, float(m_BitrateHistory.GetAverage()) / 1024 / 1024);
+                            AdjustVideoBitrate(m_Bitrate + m_InitParams.bitrateStep);
                         }
                     }
                 }
@@ -300,7 +333,7 @@ namespace ssdk::util
         }
 
         amf_pts now = amf_high_precision_clock();
-        
+
         SessionInfo& sessionInfo = m_SessionInfoMap[session];
         sessionInfo.m_FramerateHistory.AddValue(framerate, lastStatsTime);
 
@@ -308,6 +341,13 @@ namespace ssdk::util
         {
             sessionInfo.m_ForceIDRReqCount = forceIDRReqCount;
             sessionInfo.m_ForceIDRReqCountUpdateTime = lastStatsTime;
+            sessionInfo.m_DecoderQueueDepth = decoderQueueDepth;
+            if (decoderQueueDepth > 0)
+            {
+//                sessionInfo.m_DecoderQueueOverflowCnt++;
+//                sessionInfo.m_DecoderQueueOverflowFps = m_Framerate;
+//                AMFTraceWarning(AMF_FACILITY, L"Decoder overflow at %5.2f fps, depth is %lld, count=%d", m_Framerate, decoderQueueDepth, sessionInfo.m_DecoderQueueOverflowCnt);
+            }
         }
 
         if (sendTime > m_WorstSendTime)
@@ -316,16 +356,10 @@ namespace ssdk::util
             m_WorstSendTimeHistory.AddValue(sendTime, now);
         }
 
-        if (decoderQueueDepth > m_InitParams.maxDecoderQueueDepth)
-        {
-            m_DecoderQueueDepthExcess = true;
-        }
     }
 
     void QoS::ResetCounters()
     {
-        m_InitParams = {};
-
         m_FirstFrameTime = 0;
         m_LastFrameTime = 0;
         m_FramerateHistory.Clear();
@@ -335,22 +369,21 @@ namespace ssdk::util
         m_LastVideoBitrateAdjustmentTime = 0;
         m_Panic = false;
         m_LastPanicTime = 0;
-        
+
         m_SessionInfoMap.clear();
         m_BitrateHistory.Clear();
         m_WorstSendTime = 0.0f;
-        m_DecoderQueueDepthExcess = false;        
+
+        NotifyCallback(QoSEvent::FPS_CHANGE, amf::AMFVariant(m_InitParams.maxFramerate));
+        NotifyCallback(QoSEvent::VIDEO_BITRATE_CHANGED, amf::AMFVariant(m_InitParams.maxBitrate));
     }
 
-    float QoS::AdjustFramerate(float step)
+    void QoS::AdjustFramerate(float targetFps)
     {
-        float result = m_Framerate;
-
-        float targetFps = m_Framerate + step;
         if (targetFps < m_InitParams.minFramerate)
         {
             targetFps = m_InitParams.minFramerate;
-            if (targetFps != m_EncoderTargetFramerate)
+            if (m_Framerate != m_InitParams.minFramerate)
             {
                 NotifyCallback(QoSEvent::FPS_REACHED_LOW_LIMIT, amf::AMFVariant(targetFps));
             }
@@ -358,31 +391,25 @@ namespace ssdk::util
         else if (targetFps > m_InitParams.maxFramerate)
         {
             targetFps = m_InitParams.maxFramerate;
-            if (targetFps != m_EncoderTargetFramerate)
+            if (m_Framerate != m_InitParams.maxFramerate)
             {
                 NotifyCallback(QoSEvent::FPS_REACHED_HIGH_LIMIT, amf::AMFVariant(targetFps));
             }
         }
 
-        if (targetFps != m_EncoderTargetFramerate)
+        if (targetFps != m_Framerate)
         {
             NotifyCallback(QoSEvent::FPS_CHANGE, amf::AMFVariant(targetFps));
             m_LastFpsAdjustmentTime = amf_high_precision_clock();
-            result = targetFps;
         }
-        
-        return result;
     }
 
-    int64_t QoS::AdjustVideoBitrate(int64_t current, int64_t step)
+    void QoS::AdjustVideoBitrate(int64_t targetBitrate)
     {
-        int64_t result = current;
-
-        int64_t targetBitrate = current + step;
         if (targetBitrate < m_InitParams.minBitrate)
         {
             targetBitrate = m_InitParams.minBitrate;
-            if (targetBitrate != m_Bitrate)
+            if (m_Bitrate != m_InitParams.minBitrate)
             {
                 NotifyCallback(QoSEvent::VIDEO_BITRATE_REACHED_LOW_LIMIT, amf::AMFVariant(targetBitrate));
             }
@@ -390,7 +417,7 @@ namespace ssdk::util
         else if (targetBitrate > m_InitParams.maxBitrate)
         {
             targetBitrate = m_InitParams.maxBitrate;
-            if (targetBitrate != m_Bitrate)
+            if (m_Bitrate != m_InitParams.maxBitrate)
             {
                 NotifyCallback(QoSEvent::VIDEO_BITRATE_REACHED_HIGH_LIMIT, amf::AMFVariant(targetBitrate));
             }
@@ -400,10 +427,8 @@ namespace ssdk::util
         {
             NotifyCallback(QoSEvent::VIDEO_BITRATE_CHANGED, amf::AMFVariant(targetBitrate));
             m_LastVideoBitrateAdjustmentTime = amf_high_precision_clock();
-            result = targetBitrate;
+            m_Bitrate = targetBitrate;
         }
-
-        return result;
     }
 
     void QoS::NotifyCallback(QoSEvent event, const amf::AMFVariantStruct& value)
@@ -418,5 +443,9 @@ namespace ssdk::util
     {
         amf::AMFLock lock(&m_Guard);
         m_SessionInfoMap.erase(session);
+        if (m_SessionInfoMap.empty() == true)
+        {   //  Once the last session has disconnected, restore the defaults
+            ResetCounters();
+        }
     }
 }
