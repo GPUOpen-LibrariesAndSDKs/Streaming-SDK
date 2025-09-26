@@ -78,12 +78,6 @@ elseif(UNIX)
         ${CMAKE_CURRENT_SOURCE_DIR}/server/lnx/TouchScreenControllerLnxSvr.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tbls/WindowsToX11KeyTable.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tbls/X11ToWindowsScanCodeTable.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/SDBusImportTable.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/SDBusMessagePtr.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/SDBusSlotPtr.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/DBusConnection.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/XDGRDPortalConnection.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/XDGDesktopPortal.cpp
         PARENT_SCOPE
     )
 
@@ -97,13 +91,6 @@ elseif(UNIX)
         ${CMAKE_CURRENT_SOURCE_DIR}/server/lnx/TouchScreenControllerLnxSvr.h
         ${CMAKE_CURRENT_SOURCE_DIR}/tbls/WindowsToX11KeyTable.h
         ${CMAKE_CURRENT_SOURCE_DIR}/tbls/X11ToWindowsScanCodeTable.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/AbortController.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/SDBusImportTable.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/SDBusMessagePtr.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/SDBusSlotPtr.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/DBusConnection.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/XDGRDPortalConnection.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/xdg/XDGDesktopPortal.h
         PARENT_SCOPE
     )
 endif()

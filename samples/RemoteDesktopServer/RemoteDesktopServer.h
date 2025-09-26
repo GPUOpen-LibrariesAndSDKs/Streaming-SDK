@@ -72,6 +72,13 @@ public:
         SKIP
     };
 
+    enum class CaptureMode
+    {
+        FRAMERATE,
+        PRESENT,
+        ASAP
+    };
+
 protected:
     RemoteDesktopServer();
 public:
@@ -148,7 +155,7 @@ protected:
     ssdk::video::TransmitterAdapter::Ptr                m_VideoTransmitterAdapter;
     ssdk::video::MonoscopicVideoOutput::Ptr             m_VideoOutput;
     ssdk::transport_common::VideoStreamDescriptor       m_VideoStreamDescriptor;
-
+    CaptureMode                                         m_CaptureMode = CaptureMode::FRAMERATE;
 
     amf::AMFComponentPtr                                m_AudioCapture;
     ssdk::audio::AudioEncodeEngine::Ptr                 m_AudioEncoder;

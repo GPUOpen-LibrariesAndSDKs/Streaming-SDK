@@ -55,6 +55,15 @@ static constexpr const wchar_t* const AMF_FACILITY = L"RemoteDesktopServerWin";
 static constexpr const wchar_t* PARAM_NAME_INTERACTIVE = L"interactive";
 static constexpr const wchar_t* PARAM_NAME_VIDEO_API = L"videoapi";
 static constexpr const wchar_t* PARAM_NAME_VIDEO_CAPTURE_TYPE = L"capture";
+static constexpr const wchar_t* PARAM_NAME_CAPTURE_MODE = L"CaptureMode";
+static constexpr const wchar_t* PARAM_NAME_CAPTURE_RATE = L"FrameRate";
+
+
+//  Values for PARAM_NAME_CAPTURE_MODE
+static constexpr const wchar_t* CAPTURE_MODE_FRAMERATE = L"FRAMERATE";
+static constexpr const wchar_t* CAPTURE_MODE_PRESENT = L"PRESENT";
+static constexpr const wchar_t* CAPTURE_MODE_ASAP = L"ASAP";
+
 
 // Game controllers max count
 static constexpr const int8_t  GAME_USER_MAX_COUNT = 4;
@@ -98,6 +107,7 @@ RemoteDesktopServerWin::RemoteDesktopServerWin()
     SetParamDescription(PARAM_NAME_INTERACTIVE, ParamCommon, L"Enable interactive mode (true, false), default=true", ParamConverterBoolean);
     SetParamDescription(PARAM_NAME_VIDEO_API, ParamCommon, L"Select video API (DX11, DX12), default=DX12", nullptr);
     SetParamDescription(PARAM_NAME_VIDEO_CAPTURE_TYPE, ParamCommon, L"Select video capture type (AMD, DD), default=AMD", nullptr);
+    SetParamDescription(PARAM_NAME_CAPTURE_MODE, ParamCommon, L"Specify capture mode: [framerate, present, asap], default = framerate", nullptr);
 }
 
 RemoteDesktopServerWin::~RemoteDesktopServerWin()
@@ -219,6 +229,7 @@ bool RemoteDesktopServerWin::InitVideoCapture()
 {
     bool result = false;
     AMF_RESULT amfResult = AMF_OK;
+    static constexpr const int64_t DEFAULT_FRAMERATE = 60;
 
     std::wstring captureType = L"AMD";
     if (GetParamWString(PARAM_NAME_VIDEO_CAPTURE_TYPE, captureType) == AMF_OK)
@@ -231,12 +242,89 @@ bool RemoteDesktopServerWin::InitVideoCapture()
         if ((amfResult = AMFCreateComponentDisplayCapture(m_Context, nullptr, &m_VideoCapture)) != AMF_OK)
         {
             AMFTraceError(AMF_FACILITY, L"Failed to create Microsoft Desktop Duplication video capture component, result=%s", amf::AMFGetResultText(amfResult));
-            amfResult = AMF_FAIL;
+        }
+    }
+    else
+    {
+        if ((amfResult = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFDisplayCapture, &m_VideoCapture)) != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to create AMD video capture component, result=%s", amf::AMFGetResultText(amfResult));
         }
     }
     if (amfResult == AMF_OK)
     {
-        result = RemoteDesktopServer::InitVideoCapture();
+        std::wstring captureMode = CAPTURE_MODE_FRAMERATE;
+        if (GetParamWString(PARAM_NAME_CAPTURE_MODE, captureMode) == AMF_OK)
+        {
+            captureMode = ::toUpper(captureMode);
+        }
+        if (captureMode == CAPTURE_MODE_FRAMERATE)
+        {
+            amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_KEEP_FRAMERATE));
+            switch (amfResult)
+            {
+            case AMF_OK:
+            {
+                int64_t frameRate = DEFAULT_FRAMERATE;
+                GetParam(PARAM_NAME_CAPTURE_RATE, frameRate);
+                amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(int32_t(frameRate), 1));
+                switch (amfResult)
+                {
+                case AMF_OK:
+                    AMFTraceInfo(AMF_FACILITY, L"Capture mode is set to \"%s\" at %d fps", CAPTURE_MODE_FRAMERATE, int32_t(frameRate));
+                    m_VideoStreamDescriptor.SetFramerate(static_cast<float>(frameRate));
+                    result = true;
+                    break;
+                case AMF_NOT_FOUND:
+                case AMF_ACCESS_DENIED:
+                    AMFTraceWarning(AMF_FACILITY, L"Failed to set video capture frame rate to %d fps", int32_t(frameRate));
+                    result = true;
+                    break;
+                default:
+                    break;
+                }
+            }
+            break;
+            case AMF_NOT_FOUND:
+            case AMF_ACCESS_DENIED:
+                AMFTraceWarning(AMF_FACILITY, L"Selected video capture method does not support capture at a fixed frame rate, -%s %s ignored", PARAM_NAME_CAPTURE_MODE, CAPTURE_MODE_FRAMERATE);
+                result = true;
+                break;
+            default:
+                AMFTraceError(AMF_FACILITY, L"Error setting the AMF_DISPLAYCAPTURE_MODE property on the display capture component, result=%s", amf::AMFGetResultText(amfResult));
+                break;
+            }
+            m_CaptureMode = CaptureMode::FRAMERATE;
+        }
+        else if (captureMode == CAPTURE_MODE_PRESENT)
+        {
+            amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_WAIT_FOR_PRESENT));
+            m_VideoStreamDescriptor.SetFramerate(float(DEFAULT_FRAMERATE)); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
+            m_CaptureMode = CaptureMode::PRESENT;
+            result = true;
+        }
+        else if (captureMode == CAPTURE_MODE_ASAP)
+        {
+            amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_MODE, amf_int64(AMF_DISPLAYCAPTURE_MODE_ENUM::AMF_DISPLAYCAPTURE_MODE_GET_CURRENT_SURFACE));
+            m_VideoStreamDescriptor.SetFramerate(float(DEFAULT_FRAMERATE)); //  Set the initial frame rate to 60fps, it will be adjusted automatically in a few seconds to the actual frame rate determined by capture
+            m_CaptureMode = CaptureMode::ASAP;
+            result = true;
+        }
+        if (result != true)
+        {
+            if (amfResult == AMF_OK)
+            {
+                AMFTraceInfo(AMF_FACILITY, L"Capture mode is set to %s", captureMode.c_str());
+            }
+            else
+            {
+                AMFTraceError(AMF_FACILITY, L"Failed to set video capture mode to %s, result=%s", captureMode.c_str(), amf::AMFGetResultText(amfResult));
+            }
+        }
+        else
+        {
+            result = RemoteDesktopServer::InitVideoCapture();
+        }
     }
     return result;
 }

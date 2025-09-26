@@ -52,6 +52,10 @@
 static constexpr const wchar_t* const AMF_FACILITY = L"RemoteDesktopServerLinux";
 
 static constexpr const wchar_t* PARAM_NAME_INTERACTIVE = L"interactive";
+static constexpr const wchar_t* PARAM_NAME_CAPTURE_RATE = L"FrameRate";
+
+static constexpr const wchar_t* CAPTURE_MODE_FRAMERATE = L"FRAMERATE";
+
 
 // Game controllers max count
 static constexpr const int8_t  GAME_USER_MAX_COUNT = 1;
@@ -189,7 +193,35 @@ void RemoteDesktopServerLinux::TerminateVulkan()
 
 bool RemoteDesktopServerLinux::InitVideoCapture()
 {
-    return RemoteDesktopServer::InitVideoCapture();
+    bool result = false;
+    AMF_RESULT amfResult = AMF_OK;
+    static constexpr const int64_t DEFAULT_FRAMERATE = 60;
+
+    if ((amfResult = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFDisplayCapture, &m_VideoCapture)) == AMF_OK)
+    {
+        m_CaptureMode = CaptureMode::FRAMERATE;
+        int64_t frameRate = DEFAULT_FRAMERATE;
+        GetParam(PARAM_NAME_CAPTURE_RATE, frameRate);
+        amfResult = m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_FRAMERATE, AMFConstructRate(int32_t(frameRate), 1));
+        switch (amfResult)
+        {
+        case AMF_OK:
+            AMFTraceInfo(AMF_FACILITY, L"Capture mode is set to \"%s\" at %d fps", CAPTURE_MODE_FRAMERATE, int32_t(frameRate));
+            m_VideoStreamDescriptor.SetFramerate(static_cast<float>(frameRate));
+            result = RemoteDesktopServer::InitVideoCapture();
+            break;
+        case AMF_NOT_FOUND:
+        case AMF_ACCESS_DENIED:
+            AMFTraceWarning(AMF_FACILITY, L"Failed to set video capture frame rate to %d fps", int32_t(frameRate));
+            result = false;
+            break;
+        default:
+            result = false;
+            break;
+        }
+    }
+
+    return result;
 }
 
 bool RemoteDesktopServerLinux::InitCursorCapture()

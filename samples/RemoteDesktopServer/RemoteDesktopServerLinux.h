@@ -56,8 +56,11 @@ protected:
     void TerminateVulkan();
 
     virtual bool InitVideoCapture() override;
+
     virtual bool InitCursorCapture() override;
+
     virtual bool InitDirectories() override;
+
     virtual bool InitControllers() override;
 
     AMF_RESULT   InitCrtcInfo();
