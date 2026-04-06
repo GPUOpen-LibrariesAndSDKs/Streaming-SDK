@@ -37,8 +37,11 @@ THE SOFTWARE.
 
 #include "MouseControllerWinSvr.h"
 
+#include "amf/public/common/TraceAdapter.h"
+
 namespace ssdk::ctls::svr
 {
+    static constexpr const wchar_t* AMF_FACILITY = L"MouseControleerWinSvr.cpp";
     //-------------------------------------------------------------------------------------------------
     // MouseControllerWin
     //-------------------------------------------------------------------------------------------------

@@ -41,14 +41,13 @@ static constexpr const wchar_t* AMF_FACILITY = L"ssdk::audio::AMFAudioDecoder";
 #if defined(_WIN32)
     #define FFMPEG_HELPER_DLL_NAME    FFMPEG_DLL_NAME
 #elif defined(__linux)
-    #define FFMPEG_HELPER_DLL_NAME    L"libamf-component-ffmpeg64.so"
+    static constexpr const wchar_t* FFMPEG_HELPER_DLL_NAME = L"libamf-component-ffmpeg64.so";
 #endif
 
 namespace ssdk::audio
 {
     AMFAudioDecoder::AMFAudioDecoder(amf::AMFContext* context, int codecID) :
-        m_Context(context),
-        m_CodecID(codecID)
+        AudioDecodeEngine(context, codecID)
     {
     }
 
@@ -70,15 +69,12 @@ namespace ssdk::audio
         AMF_RETURN_IF_FAILED(result, L"AMFAudioDecoder::Init(): audio encoder failed to initialize, result=%s", amf::AMFGetResultText(result));
 
         amf::AMFComponentPtr decoder;
-#if defined(__APPLE__)
-        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFAudioDecoder_Apple_AAC, &decoder);
-        AMF_RETURN_IF_FAILED(result, L"CreateComponent : AMFAudioDecoder_Apple_AAC FAILED");
-#elif defined(__ANDROID__)
-        res = g_AMFFactory.GetFactory()->CreateComponent(m_pContext, AMFAudioDecoder_Android_AAC, &decoder);
-        AMF_RETURN_IF_FAILED(result, L"CreateComponent : AMFAudioDecoder_Android_AAC FAILED");
+#if defined(__ANDROID__)
+        result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, L"AMFAudioDecoder_Android_AAC", &decoder);
+        AMF_RETURN_IF_FAILED(result, L"CreateComponent(%s) failed, result=%s", L"AMFAudioDecoder_Android_AAC", amf::AMFGetResultText(result));
 #else
         result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_DECODER, &decoder);
-        AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed", FFMPEG_AUDIO_DECODER);
+        AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed, result=%s", FFMPEG_AUDIO_DECODER, amf::AMFGetResultText(result));
 #endif
 
         result = decoder->SetProperty(AUDIO_DECODER_IN_AUDIO_CODEC_ID, m_CodecID);
@@ -156,5 +152,77 @@ namespace ssdk::audio
         amf::AMFLock lockOut(&m_OutputGuard);
         AMF_RETURN_IF_FALSE(m_Decoder != nullptr, AMF_NOT_INITIALIZED, L"Drain() failed, decoder not initialized");
         return m_Decoder->Drain();
+    }
+
+    amf::AMF_AUDIO_FORMAT AMFAudioDecoder::GetOutputFormat() const noexcept
+    {
+        amf::AMF_AUDIO_FORMAT format = amf::AMFAF_UNKNOWN;
+        if (m_Decoder == nullptr)
+        {
+            AMFTraceError(AMF_FACILITY, L"AMFAudioDecoder not initialized");
+        }
+        else
+        {
+            int64_t propValue;
+            if (m_Decoder->GetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_FORMAT, &propValue) == AMF_OK)
+            {
+                format = static_cast<amf::AMF_AUDIO_FORMAT>(propValue);
+            }
+        }
+        return format;
+    }
+
+    int32_t AMFAudioDecoder::GetOutputChannels() const noexcept
+    {
+        int32_t channels = 0;
+        if (m_Decoder == nullptr)
+        {
+            AMFTraceError(AMF_FACILITY, L"AMFAudioDecoder not initialized");
+        }
+        else
+        {
+            int64_t propValue;
+            if (m_Decoder->GetProperty(AUDIO_DECODER_OUT_AUDIO_CHANNELS, &propValue) == AMF_OK)
+            {
+                channels = static_cast<amf::AMF_AUDIO_FORMAT>(propValue);
+            }
+        }
+        return channels;
+    }
+
+    int32_t AMFAudioDecoder::GetOutputLayout() const noexcept
+    {
+        int32_t layout = 0;
+        if (m_Decoder == nullptr)
+        {
+            AMFTraceError(AMF_FACILITY, L"AMFAudioDecoder not initialized");
+        }
+        else
+        {
+            int64_t propValue;
+            if (m_Decoder->GetProperty(AUDIO_DECODER_OUT_AUDIO_CHANNEL_LAYOUT, &propValue) == AMF_OK)
+            {
+                layout = static_cast<amf::AMF_AUDIO_FORMAT>(propValue);
+            }
+        }
+        return layout;
+    }
+
+    int32_t AMFAudioDecoder::GetOutputSamplingRate() const noexcept
+    {
+        int32_t samplingRate = 0;
+        if (m_Decoder == nullptr)
+        {
+            AMFTraceError(AMF_FACILITY, L"AMFAudioDecoder not initialized");
+        }
+        else
+        {
+            int64_t propValue;
+            if (m_Decoder->GetProperty(AUDIO_DECODER_OUT_AUDIO_SAMPLE_RATE, &propValue) == AMF_OK)
+            {
+                samplingRate = static_cast<amf::AMF_AUDIO_FORMAT>(propValue);
+            }
+        }
+        return samplingRate;
     }
 }

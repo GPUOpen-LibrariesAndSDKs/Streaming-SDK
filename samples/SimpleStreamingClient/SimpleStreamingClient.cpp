@@ -64,7 +64,7 @@ const wchar_t* PARAM_NAME_LOGFILE = L"LOGFILE";
 
 // Default parameter values
 static constexpr const unsigned short DEFAULT_PORT = 1235;
-static constexpr const int64_t  DATAGRAM_SIZE = 65507;
+static constexpr const int64_t  DATAGRAM_SIZE = 1024;
 static constexpr const amf_uint DEFAULT_TURNAROUND_LATENCY_PERIOD = 16;
 static constexpr const char* DEFAULT_DISPLAY_MODEL = "Test Display Model";
 static constexpr const wchar_t* DEFAULT_LOG_FILENAME = L"./SimpleStreamingClient.log";
@@ -171,7 +171,7 @@ bool SimpleStreamingClient::Terminate()
             TerminateVideo();
             TerminateControllers();
             OnAppTerminate();
-        
+
             TerminateAMF();
         }
         result = true;
@@ -291,8 +291,8 @@ bool SimpleStreamingClient::InitNetwork()
         m_pConnectThread = ConnectThread::Ptr(new ConnectThread(m_Transport));
 
         ssdk::transport_amd::ClientTransportImpl::ClientInitParametersAMD initParams;
-        
-        // set temporary stub callbacks
+
+        // set callbacks
         initParams.SetInputControllerCallback(m_ControllerManager.get());
         initParams.SetCursorCallback(m_ControllerManager->GetCursor().get());
         initParams.SetConnectionManagerCallback(this);
@@ -390,13 +390,15 @@ void SimpleStreamingClient::ConnectThread::FindServerAndConnect()
 {
     ssdk::transport_common::Result result = ssdk::transport_common::Result::OK;
 
-    if (m_ServerURL == "")
+    if (m_ServerURL.empty() == true && StopRequested() == false)
     {
         result = m_Transport->FindServers();
         // m_ServerURL populated in OnServerDiscovered
         if (result != ssdk::transport_common::Result::OK)
         {
             AMFTraceError(AMF_FACILITY, L"Connect Thread: Server discovery did not succeed");
+            amf_sleep(10);
+
         }
         else
         {
@@ -408,8 +410,10 @@ void SimpleStreamingClient::ConnectThread::FindServerAndConnect()
     {
         AMFTraceError(AMF_FACILITY, L"Connect Thread can't connect: server URL is not provided as parameter or through discovery");
         result = ssdk::transport_common::Result::FAIL;
+        amf_sleep(10);
+
     }
-    else
+    else if (StopRequested() == false)
     {
         result = m_Transport->Connect(m_ServerURL.c_str());
         if (result != ssdk::transport_common::Result::OK)
@@ -435,13 +439,22 @@ void SimpleStreamingClient::ConnectThread::FindServerAndConnect()
             else
             {
                 AMFTraceDebug(AMF_FACILITY, L"Connect Thread connected succesfully to server (%S) video stream", m_ServerURL.c_str());
-                RequestStop();
+                amf::AMFLock waitForWakeup(&m_WakeUpEvent);
             }
         }
     }
-
-    amf_sleep(10);
+    else
+    {
+        AMFTraceDebug(AMF_FACILITY, L"Discovery thread termination requested, exiting...");
+    }
 }
+
+void SimpleStreamingClient::ConnectThread::Wake()
+{
+    m_WakeUpEvent.SetEvent();
+}
+
+
 
 //	ServerEnumCallback methods start
 ssdk::transport_amd::ServerEnumCallback::DiscoveryCtrl SimpleStreamingClient::ConnectThread::OnServerDiscovered(ssdk::transport_amd::ServerParameters* server)
@@ -463,10 +476,11 @@ void SimpleStreamingClient::TerminateNetwork()
     if (m_pConnectThread != nullptr)
     {
         m_pConnectThread->RequestStop();
+        m_pConnectThread->Wake();
         m_pConnectThread->WaitForStop();
         m_pConnectThread = nullptr;
     }
-    
+
     if (m_Transport != nullptr)
     {
         m_Transport->Shutdown();
@@ -502,7 +516,7 @@ bool SimpleStreamingClient::InitVideo()
             //  Presenter is created and configured in the child class which overrides this method:
             m_DisplayRefreshRate = m_VideoPresenter->GetDisplayRefreshRate();
             m_PresenterFormat = m_VideoPresenter->GetInputFormat();
-            m_VideoPipeline = ssdk::video::VideoReceiverPipeline::Ptr(new ssdk::video::VideoReceiverPipeline(m_Context, m_VideoPresenter, m_AVSynchronizer));
+            m_VideoPipeline = ssdk::video::VideoReceiverPipelinePC::Ptr(new ssdk::video::VideoReceiverPipelinePC(m_Context, m_VideoPresenter, m_AVSynchronizer));
             int64_t uvdInstance = 0;
             GetParam(PARAM_NAME_UVD_INSTANCE, uvdInstance);
             bool preserveAspectRatio = true;
@@ -539,7 +553,6 @@ void SimpleStreamingClient::TerminateVideo()
     {
         m_VideoPipeline->Terminate();
         m_VideoPipeline = nullptr;
-        m_StatsManager = nullptr;
     }
     if (m_VideoPresenter != nullptr)
     {
@@ -675,39 +688,52 @@ void SimpleStreamingClient::TerminateStatistics()
         m_StatsManager->SetTransport(nullptr);
         m_StatsManager = nullptr;
     }
-    
+
     AMFTraceDebug(AMF_FACILITY, L"Statistics collector terminated");
 }
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Implementation of ConnectionManagerCallback interface
 // ------------------------------------------------------------------------------------------------------------------------
-ssdk::transport_amd::ClientTransport::ConnectionManagerCallback::DiscoveryAction SimpleStreamingClient::OnServerDiscovered(const ssdk::transport_amd::ClientTransport::ServerDescriptor& /*server*/)
+void SimpleStreamingClient::OnConnectionEstablished(const ssdk::transport_amd::ClientTransport::ServerDescriptor& server)
 {
-    return ssdk::transport_amd::ClientTransport::ConnectionManagerCallback::DiscoveryAction::STOP;
-}
-
-void SimpleStreamingClient::OnDiscoveryComplete()
-{
-}
-
-void SimpleStreamingClient::OnConnectionEstablished(const ssdk::transport_amd::ClientTransport::ServerDescriptor& /*server*/)
-{
+    AMFTraceInfo(AMF_FACILITY, L"Connection to server %S at %S established", server.GetName().c_str(), server.GetUrl().c_str());
     if (m_ControllerManager != nullptr)
     {
         m_ControllerManager->Start();
+        AMFTraceDebug(AMF_FACILITY, L"Controller Manager started");
     }
 }
 
-void SimpleStreamingClient::OnConnectionTerminated(TerminationReason /*reason*/)
+void SimpleStreamingClient::OnConnectionTerminated(TerminationReason reason)
 {
+    const wchar_t* reasonStr = nullptr;
+    switch (reason)
+    {
+    case TerminationReason::CLOSED_BY_CLIENT:
+        reasonStr = L"Closed by client";
+        break;
+    case TerminationReason::CLOSED_BY_SERVER:
+        reasonStr = L"Closed by server";
+        break;
+    case TerminationReason::TIMEOUT:
+        reasonStr = L"Timeout";
+        break;
+    default:
+        reasonStr = L"Unknown";
+        break;
+    }
+
+    AMFTraceInfo(AMF_FACILITY, L"Connection to server terminated, reason: %s", reasonStr);
     if (m_ControllerManager != nullptr)
     {
         m_ControllerManager->Stop();
+        AMFTraceDebug(AMF_FACILITY, L"Controller Manager stopped");
     }
 
-    if (m_pConnectThread != nullptr && m_pConnectThread->IsRunning() == false)
+    if (m_pConnectThread != nullptr && m_pConnectThread->IsRunning() == true)
     {
-        m_pConnectThread->Start();
+        m_pConnectThread->Wake();
+        AMFTraceInfo(AMF_FACILITY, L"Attempting to reconnect...");
     }
 }

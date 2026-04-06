@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Simple Streaming Client</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Preference Titles -->
+    <string name="messages_header">Messages</string>
+    <string name="sync_header">Sync</string>
+
+    <string name="server_url">URL (protocol://address:port)</string>
+    <string name="find_server">Find server:</string>
+    <string name="connect_to">Connect to:</string>
+    <string name="port">UDP/TCP Port</string>
+    <string name="connect">Connect</string>
+    <string name="encryption">Encryption</string>
+    <string name="password">Password</string>
+    <string name="logging">Save log</string>
+
+</resources>

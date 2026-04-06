@@ -41,8 +41,10 @@ namespace ssdk::ctls
 {
     //-------------------------------------------------------------------------------------------------
     MouseCursorLnx::MouseCursorLnx(bool bShowCursor, bool bFullScreen, Display* dpy, amf_handle hWindow) :
-        MouseCursor(bShowCursor, bFullScreen, hWindow),
-        m_dpy(new XDisplay(dpy))
+        m_dpy(new XDisplay(dpy)),
+        m_hWindow(hWindow),
+        m_bShowCursor(bShowCursor),
+        m_bFullScreen(bFullScreen)
     {
         const char data[1] = { 0 };
         XColor empty;

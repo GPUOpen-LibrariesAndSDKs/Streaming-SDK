@@ -92,13 +92,14 @@ namespace ssdk::util
             amf_pts timeBeforePanic = 0;                    // in amf_pts - lower fps and bitrate to min if time since the last statistics from client exceeds this value
             int64_t thresholdIDR = 0;                       // the number of FORCE_IDR requests in a stat interval to lower quality
             int64_t panicThresholdIDR = 0;                  // the number of FORCE_IDR requests in a stat interval to trigger panic mode
-            int64_t maxEncoderQueueDepth = 0;               // the maximum number of frames allowed to accumulate in encoder before lowering the frame rate
-            int64_t maxDecoderQueueDepth = 0;               // the maximum number of frames allowed to accumulate in decoder before lowering the frame rate
+            int64_t maxEncoderQueueDepth = 1;               // the maximum number of frames allowed to accumulate in encoder before lowering the frame rate
+            int64_t acceptableDecoderQueueDepth = 2;        // the maximum number of frames allowed to accumulate in the decoder queue that is considered acceptable (~1-2)
+            int64_t maxDecoderQueueDepth = 5;               // the maximum number of frames allowed to accumulate in decoder before lowering the frame rate
             QoSStrategy strategy = QoSStrategy::ADJUST_BOTH;// QoS strategy - a 64-bit mask (see above)
             
             float   minFramerate = 0.0f;                    // minimum fps QoS would go down to
             float   maxFramerate = 0.0f;                    // maximum fps QoS would go up to
-            float   framerateStep = 0;                      // fps adjustment step
+            float   framerateStep = 5;                      // fps adjustment step
             amf_pts framerateAdjustmentPeriod = 5;          // in amf_pts - frequency of frame rate adjustments
             
             int64_t minBitrate = 0;                         // minimum video bitrate QoS would go down to in bps

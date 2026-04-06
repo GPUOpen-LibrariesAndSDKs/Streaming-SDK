@@ -54,7 +54,7 @@ THE SOFTWARE.
 
 #include "sdk/transports/transport-amd/ClientTransportImpl.h"
 #include "sdk/video/MonoscopicVideoInput.h"
-#include "sdk/video/VideoReceiverPipeline.h"
+#include "sdk/video/VideoReceiverPipelinePC.h"
 #include "sdk/audio/AudioInput.h"
 #include "sdk/audio/AudioReceiverPipeline.h"
 #include "sdk/util/pipeline/AVSynchronizer.h"
@@ -112,8 +112,8 @@ protected:
     public:
         typedef std::unique_ptr<ConnectThread> Ptr;
         ConnectThread(ssdk::transport_common::ClientTransport::Ptr Transport) : m_Transport(Transport) {};
-            
-        virtual void Run();
+
+        virtual void Run() override;
 
         void SetServerUrl(std::string serverURL)
         {
@@ -124,12 +124,15 @@ protected:
         virtual ssdk::transport_amd::ServerEnumCallback::DiscoveryCtrl AMF_STD_CALL OnServerDiscovered(ssdk::transport_amd::ServerParameters* server) override;
         virtual ssdk::transport_amd::ServerEnumCallback::DiscoveryCtrl AMF_STD_CALL OnConnectionRefused() override;
 
+        void Wake();
+
     protected:
         void FindServerAndConnect();
 
     protected:
         ssdk::transport_common::ClientTransport::Ptr m_Transport;
         std::string m_ServerURL;
+        amf::AMFEvent               m_WakeUpEvent;
     };
     virtual bool OnAppInit();
     virtual void OnAppTerminate();
@@ -156,8 +159,6 @@ protected:
     virtual std::string GenerateGUID() const = 0;
 
     // Implementation of ConnectionManagerCallback interface
-    virtual DiscoveryAction OnServerDiscovered(const ssdk::transport_amd::ClientTransport::ServerDescriptor& server) override;  // Called every time a new server is found
-    virtual void OnDiscoveryComplete() override;                                                                                // Called when the discovery process is complete
     virtual void OnConnectionEstablished(const ssdk::transport_amd::ClientTransport::ServerDescriptor& server) override;        // Called when a connection to a server was established and acknowledged by the server
     virtual void OnConnectionTerminated(TerminationReason reason) override;                                                     // Called when a connection was terminated for any reason
 
@@ -171,7 +172,7 @@ protected:
     ssdk::util::AVSynchronizer::Ptr         m_AVSynchronizer;
 
     ssdk::video::VideoDispatcher::Ptr       m_VideoDispatcher;
-    ssdk::video::VideoReceiverPipeline::Ptr m_VideoPipeline;
+    ssdk::video::VideoReceiverPipelinePC::Ptr m_VideoPipeline;
     ssdk::util::ClientStatsManager::Ptr     m_StatsManager;
     VideoPresenterPtr                       m_VideoPresenter;
     amf::AMF_SURFACE_FORMAT                 m_PresenterFormat = amf::AMF_SURFACE_FORMAT::AMF_SURFACE_UNKNOWN;

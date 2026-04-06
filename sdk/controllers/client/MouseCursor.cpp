@@ -36,15 +36,6 @@
 namespace ssdk::ctls
 {
     //-------------------------------------------------------------------------------------------------
-    MouseCursor::MouseCursor(bool bShowCursor, bool bFullScreen, amf_handle hWindow) :
-        m_bFirstRun(true),
-        m_bShowCursor(bShowCursor),
-        m_bFullScreen(bFullScreen),
-        m_hWindow(hWindow)
-    {
-    }
-
-    //-------------------------------------------------------------------------------------------------
     void MouseCursor::OnCursorChanged(const transport_common::Cursor& /*cursor*/)
     {
     }

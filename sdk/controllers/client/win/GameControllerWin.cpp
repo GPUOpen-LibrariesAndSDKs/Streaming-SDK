@@ -81,7 +81,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    void AMF_STD_CALL GameController::FireEvent(const char* id, CtlEvent* ev)
+    void AMF_STD_CALL GameController::FireEvent(const char* id, CtlEvent& ev)
     {
         if (m_pControllerManager != nullptr)
         {
@@ -118,7 +118,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_TRIGGER_LEFT_VALUE;
                 ev.value.type = amf::AMF_VARIANT_FLOAT;
                 ev.value.floatValue = state.Gamepad.bLeftTrigger / 255.f;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if (m_State.Gamepad.bRightTrigger != state.Gamepad.bRightTrigger)
             {
@@ -126,7 +126,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_TRIGGER_RIGHT_VALUE;
                 ev.value.type = amf::AMF_VARIANT_FLOAT;
                 ev.value.floatValue = state.Gamepad.bRightTrigger / 255.f;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if (m_State.Gamepad.sThumbLX != state.Gamepad.sThumbLX || m_State.Gamepad.sThumbLY != state.Gamepad.sThumbLY)
             {
@@ -135,7 +135,7 @@ namespace ssdk::ctls
                 ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
                 ev.value.floatPoint2DValue.x = state.Gamepad.sThumbLX / 32767.f;
                 ev.value.floatPoint2DValue.y = state.Gamepad.sThumbLY / 32767.f;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if (m_State.Gamepad.sThumbRX != state.Gamepad.sThumbRX || m_State.Gamepad.sThumbRY != state.Gamepad.sThumbRY)
             {
@@ -144,7 +144,7 @@ namespace ssdk::ctls
                 ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
                 ev.value.floatPoint2DValue.x = state.Gamepad.sThumbRX / 32767.f;
                 ev.value.floatPoint2DValue.y = state.Gamepad.sThumbRY / 32767.f;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP))
             {
@@ -152,7 +152,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_DPAD_UP_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN))
             {
@@ -160,7 +160,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_DPAD_DOWN_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT))
             {
@@ -168,7 +168,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_DPAD_LEFT_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT))
             {
@@ -176,7 +176,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_DPAD_RIGHT_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB))
             {
@@ -184,7 +184,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_JOYSTICK_LEFT_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB))
             {
@@ -192,7 +192,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_JOYSTICK_RIGHT_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_START) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_START))
             {
@@ -200,7 +200,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_SYSTEM_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK))
             {
@@ -208,7 +208,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_APPMENU_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER))
             {
@@ -216,7 +216,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_GRIP_LEFT_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER))
             {
@@ -224,7 +224,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_GRIP_RIGHT_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_A) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_A))
             {
@@ -232,7 +232,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_A_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_B) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_B))
             {
@@ -240,7 +240,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_B_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_X) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_X))
             {
@@ -248,7 +248,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_X_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             if ((m_State.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y))
             {
@@ -256,7 +256,7 @@ namespace ssdk::ctls
                 id += DEVICE_CTRL_Y_CLICK;
                 ev.value.type = amf::AMF_VARIANT_BOOL;
                 ev.value.boolValue = (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0;
-                FireEvent(id.c_str(), &ev);
+                FireEvent(id.c_str(), ev);
             }
             m_State = state;
         }

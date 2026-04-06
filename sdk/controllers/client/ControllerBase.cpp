@@ -43,11 +43,36 @@ namespace ssdk::ctls
         m_pControllerManager(pControllerManager)
     {
     }
+
     ControllerBase::~ControllerBase()
     {
         if (m_pConfig != nullptr)
         {
             m_pConfig->Detach(this);
+        }
+    }
+
+    void        AMF_STD_CALL ControllerBase::OnConnectionEstablished()
+    {
+        if (m_pControllerManager != nullptr)
+        {
+            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
+            if (pClientTransport != nullptr)
+            {
+                pClientTransport->SendDeviceConnected(GetID(), GetType(), m_Description.c_str());
+            }
+        }
+    }
+
+    void        AMF_STD_CALL ControllerBase::OnConnectionTerminated()
+    {
+        if (m_pControllerManager != nullptr)
+        {
+            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
+            if (pClientTransport != nullptr)
+            {
+                pClientTransport->SendDeviceDisconnected(GetID());
+            }
         }
     }
 
@@ -103,13 +128,15 @@ namespace ssdk::ctls
     // Notifies observers (controllers) that subject (config) has been updated
     void AMF_STD_CALL ControllerConfig::Notify()
     {
-        amf::AMFLock lock(&m_Guard);
+        std::list<ControllerBase*> observers;
+        {
+            amf::AMFLock lock(&m_Guard);
+            observers = m_Observers;
+        }
 
-        std::list<ControllerBase*>::iterator it = m_Observers.begin();
-        while (it != m_Observers.end())
+        for (std::list<ControllerBase*>::iterator it = observers.begin(); it != observers.end(); ++it)
         {
             (*it)->OnConfigUpdated();
-            ++it;
         }
     }
 }// namespace ssdk::ctls

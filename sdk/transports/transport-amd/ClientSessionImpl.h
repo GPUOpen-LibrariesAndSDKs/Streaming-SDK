@@ -70,7 +70,6 @@ namespace ssdk::transport_amd
 
         virtual ~ClientSessionImpl();
 
-        virtual void AMF_STD_CALL UpgradeProtocol(uint32_t version) = 0;
         virtual void AMF_STD_CALL RegisterReceiverCallback(ReceiverCallback* callback) override;
 
         virtual net::ClientSession::Result AMF_STD_CALL WaitForIncomingMessages() = 0;

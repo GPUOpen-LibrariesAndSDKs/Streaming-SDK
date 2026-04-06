@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 
-if(POLICY CMP0111)
-    cmake_policy(SET CMP0111 OLD)
-endif()
 
 # Define the project name
 project(amf-component-ffmpeg64)

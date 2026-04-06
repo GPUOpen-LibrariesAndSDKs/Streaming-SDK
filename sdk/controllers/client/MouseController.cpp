@@ -36,24 +36,11 @@
 
 namespace ssdk::ctls
 {
-#if defined(_WIN32)
-    MouseController::MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter,
-        ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, amf_handle hWnd, bool useRelativeInput) :
-#else
-    MouseController::MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter,
-        ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, Display* dpy, amf_handle hWnd, bool useRelativeInput) :
-        m_dpy(new XDisplay(dpy)),
-#endif
-        ControllerBase(pControllerManager),
-        m_pVideoPresenter(pVideoPresenter),
-        m_pVideoPipeline(pVideoPipeline),
-        m_hWnd(hWnd),
-        m_LastMousePoint{},
-        m_bRelativePos(useRelativeInput),
-        m_bRawInputInitialized(false)
+    MouseController::MouseController(ControllerManagerPtr pControllerManager) :
+        ControllerBase(pControllerManager)
     {
         m_ID = DEVICE_MOUSE;
-        m_Description = "PC mouse";
+        m_Description = "Mouse";
 
         m_EventIDs.push_back(m_ID + DEVICE_MOUSE_POS);
         m_EventIDs.push_back(m_ID + DEVICE_MOUSE_L_CLICK);
@@ -63,10 +50,6 @@ namespace ssdk::ctls
 
         m_pConfig = std::make_shared<MouseControllerConfig>();
         m_pConfig->Attach(this);
-
-#if defined(__linux)
-        Init();
-#endif
     }
 
     //-------------------------------------------------------------------------------------------------
@@ -83,73 +66,11 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    void MouseController::OnConnectionEstablished()
-    {
-        if (m_pControllerManager != nullptr)
-        {
-            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
-            if (pClientTransport != nullptr)
-            {
-                pClientTransport->SendDeviceConnected(GetID(), GetType(), m_Description.c_str());
-            }
-        }
-    }
-
-    void MouseController::OnConnectionTerminated()
-    {
-        if (m_pControllerManager != nullptr)
-        {
-            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
-            if (pClientTransport != nullptr)
-            {
-                pClientTransport->SendDeviceDisconnected(GetID());
-            }
-        }
-    }
-
-    //-------------------------------------------------------------------------------------------------
-    void MouseController::ProcessInputEvent(const char* eventID, const amf::AMFVariant& event)
-    {
-        // If Input Event is Mouse Move (from Server)
-        if (strcmp(eventID, DEVICE_MOUSE_POS) == 0)
-        {
-            // Get mouse position, normalize and set to mouse controller
-            if (event.type == amf::AMF_VARIANT_FLOAT_POINT2D)
-            {
-                // Get position in range [0, 1]
-                AMFFloatPoint2D mousePos = event.floatPoint2DValue;
-
-                // Denormalize mouse position according to client screen
-                bool bFullScreen = true;
-                if (m_pVideoPresenter != nullptr)
-                {
-                    AMFRect rcViewport{ 0, 0, m_pVideoPresenter->GetFrameWidth() - 1, m_pVideoPresenter->GetFrameHeight() - 1 };
-                    if (m_pVideoPipeline != nullptr)
-                    {
-                        rcViewport = m_pVideoPipeline->GetViewport();
-                    }
-
-                    CalculateMousePos(mousePos, rcViewport, AMFConstructSize(m_pVideoPresenter->GetFrameWidth() - 1, m_pVideoPresenter->GetFrameHeight() - 1));
-                    bFullScreen = m_pVideoPresenter->GetFullScreen();
-                }
-
-                // Set mouse position
-                MouseControllerConfigPtr pMouseConfig = GetMouseConfig();
-                if (pMouseConfig != nullptr)
-                {
-                    pMouseConfig->SetMousePosition(mousePos);
-                    pMouseConfig->SetFullScreen(bFullScreen);
-                }
-            }
-        }
-    }
-
-    //-------------------------------------------------------------------------------------------------
     void MouseController::CalculateMousePos(AMFFloatPoint2D& mousePos, AMFRect rcViewport, AMFSize frameSize) const noexcept
     {
         double viewportAspectRatio = double(rcViewport.Width()) / double(rcViewport.Height());
         double frameAspectRatio = double(frameSize.width) / double(frameSize.height);
-        
+
         if (viewportAspectRatio == frameAspectRatio)
         {
             mousePos.x *= float(frameSize.width);
@@ -185,20 +106,26 @@ namespace ssdk::ctls
     //------------------------------------------------------------------------------------------------
     void AMF_STD_CALL MouseControllerConfig::SetBlackBarsSize(const AMFSize& size)
     {
-        amf::AMFLock lock(&m_Guard);
-        m_BlackBarsSize = size;
+        {
+            amf::AMFLock lock(&m_Guard);
+            m_BlackBarsSize = size;
+        }
         Notify();
     }
     void AMF_STD_CALL MouseControllerConfig::SetMousePosition(const AMFFloatPoint2D& mousePos)
     {
-        amf::AMFLock lock(&m_Guard);
-        m_MousePosition = mousePos;
+        {
+            amf::AMFLock lock(&m_Guard);
+            m_MousePosition = mousePos;
+        }
         Notify();
     }
     void AMF_STD_CALL MouseControllerConfig::SetFullScreen(bool bFullScreen)
     {
-        amf::AMFLock lock(&m_Guard);
-        m_bFullScreen = bFullScreen;
+        {
+            amf::AMFLock lock(&m_Guard);
+            m_bFullScreen = bFullScreen;
+        }
         Notify();
     }
 

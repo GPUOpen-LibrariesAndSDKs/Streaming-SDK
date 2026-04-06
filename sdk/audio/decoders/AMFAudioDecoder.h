@@ -40,9 +40,7 @@
 #endif
 
 #include "AudioDecodeEngine.h"
-#include "amf/public/include/core/Context.h"
 #include "amf/public/include/components/Component.h"
-#include "amf/public/common/Thread.h"
 
 namespace ssdk::audio
 {
@@ -62,12 +60,14 @@ namespace ssdk::audio
         virtual AMF_RESULT Flush() override;
         virtual AMF_RESULT Drain() override;
 
+        virtual amf::AMF_AUDIO_FORMAT GetOutputFormat() const noexcept;
+        virtual int32_t GetOutputChannels() const noexcept;
+        virtual int32_t GetOutputLayout() const noexcept;
+        virtual int32_t GetOutputSamplingRate() const noexcept;
 
     protected:
         mutable amf::AMFCriticalSection m_InputGuard;
         mutable amf::AMFCriticalSection m_OutputGuard;
-        amf::AMFContextPtr      m_Context;
         amf::AMFComponentPtr    m_Decoder;
-        int                     m_CodecID;
     };
 }

@@ -122,7 +122,6 @@ namespace ssdk::util
         FloatValueAverage m_AVDesyncHistory;
         typedef std::map<amf_pts, amf_pts> DecoderQueueTimes;
         DecoderQueueTimes m_DecoderQueueTimes;
-        int32_t m_DecoderQueueDepth = 0;
 
         amf_pts m_LastFrameTime = 0;
         amf_pts m_LastSendStatsTime = 0;

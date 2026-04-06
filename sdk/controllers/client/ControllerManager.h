@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -33,11 +33,15 @@
 #pragma once
 
 #include "ControllerBase.h"
-#include "MouseController.h"
-#include "KeyboardController.h"
 #include "GameController.h"
-#include "controllers/TouchEvent.h"
+#include "KeyboardController.h"
+#if defined(__ANDROID__)
+#include "sdk/controllers/client/android/TouchControllerAndroid.h"
+#else
+#include "MouseController.h"
 #include "TrackedHeadset.h"
+#endif
+#include "controllers/TouchEvent.h"
 #include "transports/transport-common/ClientTransport.h"
 #include "MouseCursor.h"
 
@@ -54,13 +58,21 @@ namespace ssdk::ctls
         virtual ~ControllerManager();
 
         typedef std::shared_ptr<ControllerManager> Ptr;
-        
+
         void AddController(ControllerBase::Ptr pController);
         bool RemoveController(ControllerBase::Ptr pController);
 
-        bool ProcessMessage(WindowMessage msg);
-#if !defined(_WIN32)
+        bool ProcessMessage(const WindowMessage& msg);
+#if !defined(_WIN32) && !defined(__ANDROID__)
         bool ProcessMessage(ExtWindowMessage msg);
+#endif
+
+#if defined(__ANDROID__)
+        void ProcessKeyEvent(int keyCode, int action);
+        void ProcessGenericMotionEvent(int axis, float value);
+        void ProcessTouchEvent(int32_t action, int64_t eventTime, int32_t pointerCount,
+                              const int32_t* pointerIds, const float* xCoords, const float* yCoords,
+                              int32_t viewWidth, int32_t viewHeight);
 #endif
 
         void SetClientTransport(ssdk::transport_common::ClientTransport::Ptr pClientTransport);
@@ -69,7 +81,7 @@ namespace ssdk::ctls
         void SetCursor(MouseCursor::Ptr pCursor);
         MouseCursor::Ptr GetCursor() { return m_pCursor; };
 
-        void SendControllerEvent(const char* id, const ssdk::ctls::CtlEvent* pEvent);
+        void SendControllerEvent(const char* id, const ssdk::ctls::CtlEvent& event);
 
         // InputControllerCallback interface
         virtual void OnControllerEnabled(const char* /*deviceID*/, ssdk::transport_common::ControllerType /*type*/) override {};

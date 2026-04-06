@@ -206,7 +206,6 @@ namespace ssdk::transport_amd
     {
         if (IsTerminated() == false)
         {
-            NotifyTerminationCallbacks(ReceiverCallback::TerminationReason::DISCONNECT);
             DatagramClientSessionFlowCtrl::Terminate();
             m_Socket->Close();
         }
@@ -310,7 +309,6 @@ namespace ssdk::transport_amd
     {
         if(IsTerminated() == false)
         {
-            NotifyTerminationCallbacks(ReceiverCallback::TerminationReason::DISCONNECT);
             net::StreamClientSession::Terminate();
         }
     }

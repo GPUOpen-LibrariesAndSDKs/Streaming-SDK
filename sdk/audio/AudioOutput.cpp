@@ -48,6 +48,26 @@ static constexpr const wchar_t* const AMF_FACILITY = L"ssdk::audio::AudioOutput"
 
 namespace ssdk::audio
 {
+    static const wchar_t* AudioFormatToText(amf::AMF_AUDIO_FORMAT format)
+    {
+        static constexpr const wchar_t* formats[] =
+        {
+            L"AMFAF_UNKNOWN",
+            L"AMFAF_U8",
+            L"AMFAF_S16", 
+            L"AMFAF_S32", 
+            L"AMFAF_FLT", 
+            L"AMFAF_DBL", 
+            L"AMFAF_U8P", 
+            L"AMFAF_S16P",
+            L"AMFAF_S32P",
+            L"AMFAF_FLTP",
+            L"AMFAF_DBLP"
+        };
+
+        return formats[static_cast<int>(format)+1];
+    }
+
     AudioOutput::AudioOutput(TransmitterAdapter& transportAdapter, AudioEncodeEngine::Ptr encoder, amf::AMFContext* context) :
         m_TransportAdapter(transportAdapter),
         m_Context(context),
@@ -86,7 +106,7 @@ namespace ssdk::audio
                 actualOutputLayout = m_Encoder->GetLayout();
             }
         }
-        if (inputSamplingRate != outputSamplingRate || inputChannels != outputChannels || inputLayout != outputLayout || inputFormat != actualOutputFormat)
+        if (result == AMF_OK && (inputSamplingRate != outputSamplingRate || inputChannels != outputChannels || inputLayout != outputLayout || inputFormat != actualOutputFormat))
         {   //  Input parameters do not match the output parameters, need an audio converter to resample
             result = InitializeConverter(inputFormat, inputSamplingRate, inputChannels, inputLayout, actualOutputFormat, actualOutputSamplingRate, actualOutputChannels, actualOutputLayout);
         }
@@ -105,6 +125,7 @@ namespace ssdk::audio
                 m_SequenceNumber = 0;
                 m_ExpectedPts = 0;
                 m_Initialized = true;
+                AMFTraceInfo(AMF_FACILITY, L"Audio pipeline initialized: format %s, sampling rate: %dHz, channels: %d, layout: %d", AudioFormatToText(actualOutputFormat), actualOutputSamplingRate, actualOutputChannels, actualOutputLayout);
             }
             m_Pump->Start();
         }
@@ -114,20 +135,14 @@ namespace ssdk::audio
     AMF_RESULT AudioOutput::InitializeEncoder(int32_t outputSamplingRate, int32_t outputChannels, int32_t outputLayout, int32_t bitrate)
     {
         AMF_RESULT result = AMF_OK;
+        amf::AMFBufferPtr extraData;
         if (m_Encoder != nullptr)
         {
             result = m_Encoder->Init(outputSamplingRate, outputChannels, outputLayout, bitrate);
             AMF_RETURN_IF_FAILED(result, L"Failed to initialize audio encoder, result = %s", amf::AMFGetResultText(result));
-            amf::AMFBufferPtr extraData;
-            if (m_Encoder->GetExtraData(&extraData) == AMF_OK)
-            {
-                SaveExtraData(extraData);
-            }
+            m_Encoder->GetExtraData(&extraData);
         }
-        else
-        {
-            SaveExtraData(nullptr);
-        }
+        SaveExtraData(extraData);
         return result;
     }
 
@@ -355,7 +370,10 @@ namespace ssdk::audio
     {
         amf::AMFLock lock(&m_Guard);
         *buffer = m_ExtraData;
-        (*buffer)->Acquire();
+        if (*buffer != nullptr)
+        {
+            (*buffer)->Acquire();
+        }
         id = m_InitID;
         bool result = m_LastRetrievedExtraDataID != m_InitID;
         m_LastRetrievedExtraDataID = m_InitID;

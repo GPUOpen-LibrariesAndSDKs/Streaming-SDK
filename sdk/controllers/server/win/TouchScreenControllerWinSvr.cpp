@@ -69,31 +69,28 @@ namespace ssdk::ctls::svr
 
         for (std::vector<TouchEvent::Pointer>::const_iterator i = pTouchEvent->PointersBegin(); i != pTouchEvent->PointersEnd(); i++)
         {
-            if (i->m_id == pointerId)
-            {
-                POINTER_INFO pointerInfo{ DefaultPointerInfo() };
-                pointerInfo.pointerId = i->m_id;
-                pointerInfo.ptPixelLocation = { static_cast<LONG>(i->m_x * static_cast<double>(m_ScreenSize.width)), static_cast<LONG>(i->m_y * static_cast<double>(m_ScreenSize.height)) };
-                LONG ptContactSize = 2;
-                touchInfo.rcContact = { pointerInfo.ptPixelLocation.x - ptContactSize, pointerInfo.ptPixelLocation.y - ptContactSize, pointerInfo.ptPixelLocation.x + ptContactSize, pointerInfo.ptPixelLocation.y + ptContactSize };
-                switch (maskedAction) {
-                case TOUCH_EVENT_ACTION_DOWN:
-                case TOUCH_EVENT_ACTION_POINTER_DOWN:
-                    pointerInfo.pointerFlags = TOUCH_BEGIN;
-                    break;
-                case TOUCH_EVENT_ACTION_MOVE:
-                    pointerInfo.pointerFlags = TOUCH_MOVE;
-                    break;
-                case TOUCH_EVENT_ACTION_UP:
-                case TOUCH_EVENT_ACTION_POINTER_UP:
-                    pointerInfo.pointerFlags = TOUCH_END;
+            POINTER_INFO pointerInfo{ DefaultPointerInfo() };
+            pointerInfo.pointerId = i->m_id;
+            pointerInfo.ptPixelLocation = { static_cast<LONG>(i->m_x * static_cast<double>(m_ScreenSize.width)), static_cast<LONG>(i->m_y * static_cast<double>(m_ScreenSize.height)) };
+            LONG ptContactSize = 2;
+            touchInfo.rcContact = { pointerInfo.ptPixelLocation.x - ptContactSize, pointerInfo.ptPixelLocation.y - ptContactSize, pointerInfo.ptPixelLocation.x + ptContactSize, pointerInfo.ptPixelLocation.y + ptContactSize };
+            switch (maskedAction) {
+            case TOUCH_EVENT_ACTION_DOWN:
+            case TOUCH_EVENT_ACTION_POINTER_DOWN:
+                pointerInfo.pointerFlags = TOUCH_BEGIN;
                 break;
-                default:
-                    return;
-                }
-                touchInfo.pointerInfo = std::move(pointerInfo);
-                UpdateTouch(touchInfo);
+            case TOUCH_EVENT_ACTION_MOVE:
+                pointerInfo.pointerFlags = TOUCH_MOVE;
+                break;
+            case TOUCH_EVENT_ACTION_UP:
+            case TOUCH_EVENT_ACTION_POINTER_UP:
+                pointerInfo.pointerFlags = TOUCH_END;
+            break;
+            default:
+                return;
             }
+            touchInfo.pointerInfo = std::move(pointerInfo);
+            UpdateTouch(touchInfo);
         }
 
         std::sort(m_Touches.begin(), m_Touches.end(), &TouchSorter);

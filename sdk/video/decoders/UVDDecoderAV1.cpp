@@ -42,14 +42,25 @@ namespace ssdk::video
     UVDDecoderAV1::UVDDecoderAV1(amf::AMFContext* context, size_t instance) :
         UVDDecoder(context, instance)
     {
+        AMF_RESULT result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFVideoDecoderHW_AV1, &m_Decoder);
+        if (result != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to create an AV1 decoder, result=%s", amf::AMFGetResultText(result));
+        }
     }
+
     AMF_RESULT UVDDecoderAV1::Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& resolution, float frameRate, amf::AMFBuffer* initBlock)
     {
         if (m_Decoder == nullptr || format != m_Format)
         {
+            amf::AMFComponentPtr oldDecoder(m_Decoder);
             AMF_RESULT result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, format == amf::AMF_SURFACE_FORMAT::AMF_SURFACE_P010 ? AMFVideoDecoderHW_AV1_12BIT : AMFVideoDecoderHW_AV1, &m_Decoder);
-            AMF_RETURN_IF_FAILED(result, L"Failed to create an AV1 UVD decoder, result=%s", amf::AMFGetResultText(result));
+            AMF_RETURN_IF_FAILED(result, L"Failed to create an AV1 decoder, result=%s", amf::AMFGetResultText(result));
             m_Format = format;
+            if (oldDecoder != nullptr)
+            {
+                oldDecoder->CopyTo(m_Decoder, false);
+            }
         }
         return UVDDecoder::Init(format, resolution, frameRate, initBlock);
     }

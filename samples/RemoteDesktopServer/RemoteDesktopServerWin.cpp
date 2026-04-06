@@ -50,7 +50,7 @@
 #pragma comment(lib, "imm32.lib")
 #pragma comment(lib, "dxgi.lib")
 
-static constexpr const wchar_t* const AMF_FACILITY = L"RemoteDesktopServerWin";
+#define AMF_FACILITY L"RemoteDesktopServerWin"
 
 static constexpr const wchar_t* PARAM_NAME_INTERACTIVE = L"interactive";
 static constexpr const wchar_t* PARAM_NAME_VIDEO_API = L"videoapi";
@@ -178,6 +178,7 @@ bool RemoteDesktopServerWin::InitDX()
                 else
                 {
                     m_MemoryType = amf::AMF_MEMORY_TYPE::AMF_MEMORY_DX12;
+                    AMFTraceInfo(AMF_FACILITY, L"Using DX12 video pipeline");
                 }
             }
         }
@@ -197,6 +198,7 @@ bool RemoteDesktopServerWin::InitDX()
             else
             {
                 m_MemoryType = amf::AMF_MEMORY_TYPE::AMF_MEMORY_DX11;
+                AMFTraceInfo(AMF_FACILITY, L"Using DX11 video pipeline");
             }
         }
     }
@@ -243,12 +245,20 @@ bool RemoteDesktopServerWin::InitVideoCapture()
         {
             AMFTraceError(AMF_FACILITY, L"Failed to create Microsoft Desktop Duplication video capture component, result=%s", amf::AMFGetResultText(amfResult));
         }
+        else
+        {
+            AMFTraceInfo(AMF_FACILITY, L"Using Microsoft Desktop Duplication API");
+        }
     }
     else
     {
         if ((amfResult = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFDisplayCapture, &m_VideoCapture)) != AMF_OK)
         {
             AMFTraceError(AMF_FACILITY, L"Failed to create AMD video capture component, result=%s", amf::AMFGetResultText(amfResult));
+        }
+        else
+        {
+            AMFTraceInfo(AMF_FACILITY, L"Using AMD Direct Capture API");
         }
     }
     if (amfResult == AMF_OK)

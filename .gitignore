@@ -1,9 +1,11 @@
 # Gitignore for Streaming SDK
 # Build results
-build/*
+*build/*
 out/*
 bin/*
 *.spv*
+*.gradle/*
+*.idea/*
 
 # User-specific files
 *.rsuser

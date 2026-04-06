@@ -105,6 +105,7 @@ namespace ssdk::video
                 {
                     amf::AMFBufferPtr inputFrame;
                     frame.GetSubframeBuffer(i, &inputFrame);
+                    inputFrame->SetPts(frame.GetPts());
                     inputFrame->SetProperty(ORIGIN_PTS_PROPERTY, frame.GetOriginPts());
                     inputFrame->SetProperty(STREAM_ID_PROPERTY, streamID);
                     inputFrame->SetProperty(VIDEO_CLIENT_LATENCY_PTS, amf_high_precision_clock());

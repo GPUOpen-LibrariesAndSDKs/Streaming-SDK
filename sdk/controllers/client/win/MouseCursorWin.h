@@ -57,7 +57,12 @@ namespace ssdk::ctls
         HICON CreateMonoCursor(amf::AMFPlanePtr plane);
 
     private:
-        HCURSOR m_hCursor;
+        HCURSOR             m_hCursor;
+        amf_handle          m_hWindow;
+        bool                m_bFirstRun;
+        bool                m_bShowCursor;
+        bool                m_bFullScreen;
+
     };
 
 } // namespace ssdk::ctls

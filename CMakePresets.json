@@ -9,7 +9,7 @@
       {
         "name": "Debug",
         "generator": "Unix Makefiles",
-        "binaryDir": "${sourceDir}/build",
+        "binaryDir": "${sourceDir}/out/build",
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "Debug"
         }
@@ -17,7 +17,7 @@
       {
         "name": "Release",
         "generator": "Unix Makefiles",
-        "binaryDir": "${sourceDir}/build",
+        "binaryDir": "${sourceDir}/out/build",
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "Release"
         }
@@ -25,7 +25,7 @@
       {
         "name": "ReleaseWithDebugInfo",
         "generator": "Unix Makefiles",
-        "binaryDir": "${sourceDir}/build",
+        "binaryDir": "${sourceDir}/out/build",
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "RelWithDebInfo"
         }
@@ -33,7 +33,7 @@
       {
         "name": "MinSizeRelease",
         "generator": "Unix Makefiles",
-        "binaryDir": "${sourceDir}/build",
+        "binaryDir": "${sourceDir}/out/build",
         "cacheVariables": {
           "CMAKE_BUILD_TYPE": "MinSizeRel"
         }

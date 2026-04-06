@@ -113,7 +113,7 @@ namespace ssdk::video
             {
                 if (m_Slices.front()->GetPts() != input->GetPts())
                 {
-                    AMFTraceWarning(AMF_FACILITY, L"New slice belongs to a diffrent frame: expected pts=%lld new pts=%lld. Frame dropped", m_Slices.front()->GetPts(), input->GetPts());
+                    AMFTraceWarning(AMF_FACILITY, L"New slice belongs to a different frame: expected pts=%lld new pts=%lld. Frame dropped", m_Slices.front()->GetPts(), input->GetPts());
                     m_Slices.clear();
                 }
             }
@@ -189,6 +189,16 @@ namespace ssdk::video
             (*output)->Acquire();
         }
         return result;
+    }
+
+    AMF_RESULT VideoDecodeEngine::SetProperty(const wchar_t* name, amf::AMFVariantStruct value)
+    {
+        amf::AMFComponentPtr decoder;
+        {
+            amf::AMFLock lock(&m_Guard);
+            decoder = m_Decoder;
+        }
+        return (decoder != nullptr) ? decoder->SetProperty(name, value) : AMF_FAIL;
     }
 
 

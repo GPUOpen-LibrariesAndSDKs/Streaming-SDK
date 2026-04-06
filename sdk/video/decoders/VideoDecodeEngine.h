@@ -84,6 +84,8 @@ namespace ssdk::video
         AMF_RESULT SubmitInput(amf::AMFBuffer* input, transport_common::VideoFrame::SubframeType frameType);
         AMF_RESULT QueryOutput(amf::AMFSurface** output);
 
+        AMF_RESULT SetProperty(const wchar_t* name, amf::AMFVariantStruct value);
+
     protected:
         mutable amf::AMFCriticalSection     m_Guard;
         mutable amf::AMFCriticalSection     m_InputGuard;

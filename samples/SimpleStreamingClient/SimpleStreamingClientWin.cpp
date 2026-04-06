@@ -40,6 +40,11 @@ THE SOFTWARE.
 
 #include "SimpleStreamingClientWin.h"
 
+#include "sdk/controllers/client/win/MouseControllerWin.h"
+#include "sdk/controllers/client/win/KeyboardControllerWin.h"
+#include "sdk/controllers/client/win/GameControllerWin.h"
+#include "sdk/controllers/client/win/TouchControllerWin.h"
+
 #include "amf/public/common/AMFFactory.h"
 #include "amf/public/common/Thread.h"
 #include "amf/public/common/TraceAdapter.h"
@@ -237,8 +242,9 @@ bool SimpleStreamingClientWin::InitControllers()
     bool useRawDataInput = true;
     GetParam(PARAM_NAME_RELATIVE_MOUSE_CAPTURE, useRawDataInput);
 
-    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::MouseController(m_ControllerManager, m_VideoPresenter, m_VideoPipeline, m_hWnd, useRawDataInput)));
-    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::KeyboardController(m_ControllerManager)));
+    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::TouchControllerWin(m_ControllerManager, m_VideoPresenter, m_VideoPipeline, m_hWnd)));
+    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::MouseControllerWin(m_ControllerManager, m_VideoPresenter, m_VideoPipeline, m_hWnd, useRawDataInput)));
+    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::KeyboardControllerWin(m_ControllerManager)));
 
     for (DWORD i = 0; i < XUSER_MAX_COUNT; i++)
     {

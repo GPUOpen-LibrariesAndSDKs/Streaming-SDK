@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="10dp" >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:orientation="vertical">
+
+            <!-- Connection options -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:clickable="false"
+                android:orientation="horizontal">
+
+                <RadioGroup
+                    android:id="@+id/radioGroupDiscovery"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="vertical">
+
+                    <RadioButton
+                        android:id="@+id/rbDiscovery"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:checked="true"
+                        android:defaultFocusHighlightEnabled="true"
+                        android:focusable="true"
+                        android:background="@drawable/selector"
+                        android:text="@string/find_server"
+                        android:textColor="@color/text_color" />
+
+                    <RadioButton
+                        android:id="@+id/rbURL"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:checked="false"
+                        android:defaultFocusHighlightEnabled="true"
+                        android:focusable="true"
+                        android:background="@drawable/selector"
+                        android:text="@string/connect_to"
+                        android:textColor="@color/text_color" />
+                </RadioGroup>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:clickable="false"
+                    android:orientation="vertical">
+                    <EditText
+                        android:id="@+id/editTextDiscoveryPort"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="16dp"
+                        android:focusable="true"
+                        android:hint="@string/port"
+                        android:inputType="number" />
+
+                    <EditText
+                        android:id="@+id/editTextURL"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:focusable="true"
+                        android:hint="@string/server_url"
+                        android:inputType="textUri" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+            <!-- Encryption options -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Switch
+                    android:id="@+id/switchUseEncryption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/selector"
+                    android:text="@string/encryption"
+                    android:textColor="@color/text_color" />
+
+                <EditText
+                    android:id="@+id/editTextPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical"
+                    android:autofillHints=""
+                    android:focusable="true"
+                    android:hint="@string/password"
+                    android:inputType="textPassword" />
+
+            </LinearLayout>
+            <!-- Logging options -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Switch
+                    android:id="@+id/switchSaveLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/selector"
+                    android:text="@string/logging"
+                    android:textColor="@color/text_color" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+    <!-- Splitter to keep the Stream button at the bottom -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+    <!-- Start button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical">
+        <Button
+            android:id="@+id/startStreaming"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_gravity="center"
+            android:background="@drawable/button"
+            android:text="@string/connect"
+            android:focusable="true" />
+    </LinearLayout>
+</LinearLayout>

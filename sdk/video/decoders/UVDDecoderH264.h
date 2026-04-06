@@ -48,8 +48,6 @@ namespace ssdk::video
     public:
         UVDDecoderH264(amf::AMFContext* context, size_t instance = 0);
 
-        virtual AMF_RESULT Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& resolution, float frameRate, amf::AMFBuffer* initBlock) override;
-
         virtual const char* GetCodecName() const noexcept override;
 
         virtual bool IsHDRSupported() const noexcept override;

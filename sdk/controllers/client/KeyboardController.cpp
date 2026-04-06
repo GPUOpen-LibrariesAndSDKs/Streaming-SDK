@@ -46,36 +46,6 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    KeyboardController::~KeyboardController()
-    {
-    }
-
-    //-------------------------------------------------------------------------------------------------
-    void KeyboardController::OnConnectionEstablished()
-    {
-        if (m_pControllerManager != nullptr)
-        {
-            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
-            if (pClientTransport != nullptr)
-            {
-                pClientTransport->SendDeviceConnected(GetID(), GetType(), m_Description.c_str());
-            }
-        }
-    }
-
-    void KeyboardController::OnConnectionTerminated()
-    {
-        if (m_pControllerManager != nullptr)
-        {
-            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
-            if (pClientTransport != nullptr)
-            {
-                pClientTransport->SendDeviceDisconnected(GetID());
-            }
-        }
-    }
-
-    //-------------------------------------------------------------------------------------------------
     AMF_RESULT AMF_STD_CALL KeyboardController::Update()
     {        
         return AMF_OK;

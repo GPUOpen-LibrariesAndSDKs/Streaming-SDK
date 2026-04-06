@@ -49,7 +49,7 @@
 #include <filesystem>
 #include <fcntl.h>
 
-static constexpr const wchar_t* const AMF_FACILITY = L"RemoteDesktopServerLinux";
+#define AMF_FACILITY L"RemoteDesktopServerLinux"
 
 static constexpr const wchar_t* PARAM_NAME_INTERACTIVE = L"interactive";
 static constexpr const wchar_t* PARAM_NAME_CAPTURE_RATE = L"FrameRate";

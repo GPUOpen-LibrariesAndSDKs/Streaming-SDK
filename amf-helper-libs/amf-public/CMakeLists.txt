@@ -3,199 +3,226 @@ cmake_minimum_required(VERSION 3.15)
 # Define the project name
 project(amf-public)
 
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-value -Wno-deprecated-declarations")
+endif ()
+
+set(AMF_LOCATION "../../amf/amf")
+
 # Define source files
 set(HLSL_PIXEL_SHADER_FILES
-    "../../amf/amf/public/samples/CPPSamples/common/QuadDX11_ps.hlsl"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadDX12_ps.hlsl"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadDX9_ps.hlsl"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadDX11_ps.hlsl"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadDX12_ps.hlsl"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadDX9_ps.hlsl"
 )
 
 set(HLSL_VERTEX_SHADER_FILES
-    "../../amf/amf/public/samples/CPPSamples/common/QuadDX11_vs.hlsl"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadDX12_vs.hlsl"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadDX9_vs.hlsl"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadDX11_vs.hlsl"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadDX12_vs.hlsl"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadDX9_vs.hlsl"
 )
 
 set(HLSL_COMPUTE_SHADER_FILES
-    "../../amf/amf/public/src/components/DisplayCapture/DrawRectsBGRA.hlsl"
+    "${AMF_LOCATION}/public/src/components/DisplayCapture/DrawRectsBGRA.hlsl"
 )
 
 set(VLSL_SHADER_FILES
-    "../../amf/amf/public/samples/CPPSamples/common/QuadVulkan_fs.frag"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadVulkan_vs.vert"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadVulkan_fs.frag"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadVulkan_vs.vert"
 )
 
-set(SOURCE_FILES
-    "../../amf/amf/public/common/AMFFactory.cpp"
-    "../../amf/amf/public/common/AMFSTL.cpp"
-    "../../amf/amf/public/common/CurrentTimeImpl.cpp"
-    "../../amf/amf/public/common/JsonImpl.cpp"
-    "../../amf/amf/public/common/PropertyStorageExImpl.cpp"
-    "../../amf/amf/public/common/Thread.cpp"
-    "../../amf/amf/public/common/TraceAdapter.cpp"
-    "../../amf/amf/public/common/VulkanImportTable.cpp"
-    "../../amf/amf/public/common/OpenGLImportTable.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/AudioPresenter.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/AudioPresenterLinux.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/CaptureVideoPipelineBase.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/CmdLineParser.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/CmdLogger.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/MiscHelpers.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/OpenCLLoader.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/ParametersStorage.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/Pipeline.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/PlaybackPipeline.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/PlaybackPipelineBase.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/PreProcessingParams.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SurfaceUtils.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChain.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenter.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceVulkan.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainVulkan.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainOpenGL.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterVulkan.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterOpenGL.cpp"
-    "../../amf/amf/public/src/components/AudioCapture/AudioCaptureImpl.cpp"
+set(ALL_PLATFORMS_SOURCE_FILES
+    "${AMF_LOCATION}/public/common/AMFFactory.cpp"
+    "${AMF_LOCATION}/public/common/AMFSTL.cpp"
+    "${AMF_LOCATION}/public/common/CurrentTimeImpl.cpp"
+    "${AMF_LOCATION}/public/common/JsonImpl.cpp"
+    "${AMF_LOCATION}/public/common/PropertyStorageExImpl.cpp"
+    "${AMF_LOCATION}/public/common/Thread.cpp"
+    "${AMF_LOCATION}/public/common/TraceAdapter.cpp"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/CmdLogger.cpp"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/MiscHelpers.cpp"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenter.cpp"
 )
 
 # Add platform-specific files:
-if(WIN32)
-set(SOURCE_FILES ${SOURCE_FILES}
-    "../../amf/amf/public/common/Windows/ThreadWindows.cpp"
-    "../../amf/amf/public/common/Windows/UtilsWindows.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceDX11.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceDX12.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceDX9.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDX11.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDX12.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDX9.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDXGI.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDXGIDecode.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterDX11.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterDX12.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterDX9.cpp"
-    "../../amf/amf/public/src/components/DisplayCapture/DDAPISource.cpp"
-    "../../amf/amf/public/src/components/AudioCapture/WASAPISource.cpp"
-    "../../amf/amf/public/src/components/CursorCapture/CursorCaptureWin.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceOpenCL.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceOpenGL.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/Options.cpp"
-    "../../amf/amf/public/samples/CPPSamples/common/AudioPresenterWin.cpp"
-    "../../amf/amf/public/src/components/DisplayCapture/DisplayCaptureImpl.cpp"
-)
-elseif(UNIX)
-    set(SOURCE_FILES ${SOURCE_FILES}
-    "../../amf/amf/public/common/Linux/ThreadLinux.cpp"
-    "../../amf/amf/public/common/Linux/PulseAudioImportTable.cpp"
-    "../../amf/amf/public/src/components/CursorCapture/CursorCaptureLinux.cpp"
-    "../../amf/amf/public/src/components/AudioCapture/PulseAudioSimpleAPISource.cpp"
-    "../../amf/amf/public/src/components/AudioCapture/PulseAudioSimpleAPISourceFacade.cpp"
+if (WIN32 OR LINUX)
+    set(WIN_LINUX_SOURCE_FILES
+        "${AMF_LOCATION}/public/common/VulkanImportTable.cpp"
+        "${AMF_LOCATION}/public/common/OpenGLImportTable.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/CmdLineParser.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenter.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/BitStreamParser.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/BitStreamParserH264.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/BitStreamParserH265.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/BitStreamParserIVF.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/CaptureVideoPipelineBase.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/OpenCLLoader.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/ParametersStorage.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/Pipeline.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/PlaybackPipeline.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/PlaybackPipelineBase.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/PreProcessingParams.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SurfaceUtils.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChain.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenter.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceVulkan.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainVulkan.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainOpenGL.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterVulkan.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterOpenGL.cpp"
+        "${AMF_LOCATION}/public/src/components/AudioCapture/AudioCaptureImpl.cpp"
     )
+endif()
+if(WIN32)
+    set(SOURCE_FILES ${WIN_LINUX_SOURCE_FILES} ${ALL_PLATFORMS_SOURCE_FILES}
+        "${AMF_LOCATION}/public/common/Windows/ThreadWindows.cpp"
+        "${AMF_LOCATION}/public/common/Windows/UtilsWindows.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceDX11.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceDX12.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceDX9.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDX11.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDX12.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDX9.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDXGI.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDXGIDecode.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterDX11.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterDX12.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterDX9.cpp"
+        "${AMF_LOCATION}/public/src/components/DisplayCapture/DDAPISource.cpp"
+        "${AMF_LOCATION}/public/src/components/AudioCapture/WASAPISource.cpp"
+        "${AMF_LOCATION}/public/src/components/CursorCapture/CursorCaptureWin.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceOpenCL.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceOpenGL.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/Options.cpp"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenterWin.cpp"
+        "${AMF_LOCATION}/public/src/components/DisplayCapture/DisplayCaptureImpl.cpp"
+    )
+elseif(LINUX OR ANDROID)
+    if (NOT ANDROID)
+        set(SOURCE_FILES ${WIN_LINUX_SOURCE_FILES} ${ALL_PLATFORMS_SOURCE_FILES}
+            "${AMF_LOCATION}/public/common/Linux/ThreadLinux.cpp"
+            "${AMF_LOCATION}/public/common/Linux/PulseAudioImportTable.cpp"
+            "${AMF_LOCATION}/public/src/components/CursorCapture/CursorCaptureLinux.cpp"
+            "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenterLinux.cpp"
+            "${AMF_LOCATION}/public/src/components/AudioCapture/PulseAudioSimpleAPISource.cpp"
+            "${AMF_LOCATION}/public/src/components/AudioCapture/PulseAudioSimpleAPISourceFacade.cpp"
+        )
+    else()
+        set(SOURCE_FILES ${ALL_PLATFORMS_SOURCE_FILES}
+            "${AMF_LOCATION}/public/common/Linux/ThreadLinux.cpp"
+        )
+    endif()
+
 endif()
 
 # Define header files
-set(HEADER_FILES
-    "../../amf/amf/public/common/AMFFactory.h"
-    "../../amf/amf/public/common/AMFMath.h"
-    "../../amf/amf/public/common/AMFSTL.h"
-    "../../amf/amf/public/common/ByteArray.h"
-    "../../amf/amf/public/common/CPUCaps.h"
-    "../../amf/amf/public/common/CurrentTimeImpl.h"
-    "../../amf/amf/public/common/InterfaceImpl.h"
-    "../../amf/amf/public/common/Json.h"
-    "../../amf/amf/public/common/JsonImpl.h"
-    "../../amf/amf/public/common/ObservableImpl.h"
-    "../../amf/amf/public/common/PropertyStorageExImpl.h"
-    "../../amf/amf/public/common/PropertyStorageImpl.h"
-    "../../amf/amf/public/common/Thread.h"
-    "../../amf/amf/public/common/TraceAdapter.h"
-    "../../amf/amf/public/common/VulkanImportTable.h"
-    "../../amf/amf/public/common/OpenGLImportTable.h"
-    "../../amf/amf/public/include/core/AudioBuffer.h"
-    "../../amf/amf/public/include/core/Buffer.h"
-    "../../amf/amf/public/include/core/Compute.h"
-    "../../amf/amf/public/include/core/ComputeFactory.h"
-    "../../amf/amf/public/include/core/Context.h"
-    "../../amf/amf/public/include/core/CurrentTime.h"
-    "../../amf/amf/public/include/core/Data.h"
-    "../../amf/amf/public/include/core/Debug.h"
-    "../../amf/amf/public/include/core/Dump.h"
-    "../../amf/amf/public/include/core/Factory.h"
-    "../../amf/amf/public/include/core/Interface.h"
-    "../../amf/amf/public/include/core/Plane.h"
-    "../../amf/amf/public/include/core/Platform.h"
-    "../../amf/amf/public/include/core/PropertyStorage.h"
-    "../../amf/amf/public/include/core/PropertyStorageEx.h"
-    "../../amf/amf/public/include/core/Result.h"
-    "../../amf/amf/public/include/core/Surface.h"
-    "../../amf/amf/public/include/core/Trace.h"
-    "../../amf/amf/public/include/core/Variant.h"
-    "../../amf/amf/public/include/core/Version.h"
-    "../../amf/amf/public/include/core/VulkanAMF.h"
-    "../../amf/amf/public/samples/CPPSamples/common/AMFHalfFloat.h"
-    "../../amf/amf/public/samples/CPPSamples/common/AudioPresenter.h"
-    "../../amf/amf/public/samples/CPPSamples/common/CAmfInit.h"
-    "../../amf/amf/public/samples/CPPSamples/common/CaptureVideoPipelineBase.h"
-    "../../amf/amf/public/samples/CPPSamples/common/CmdLineParser.h"
-    "../../amf/amf/public/samples/CPPSamples/common/CmdLogger.h"
-    "../../amf/amf/public/samples/CPPSamples/common/MiscHelpers.h"
-    "../../amf/amf/public/samples/CPPSamples/common/OpenCLLoader.h"
-    "../../amf/amf/public/samples/CPPSamples/common/ParametersStorage.h"
-    "../../amf/amf/public/samples/CPPSamples/common/Pipeline.h"
-    "../../amf/amf/public/samples/CPPSamples/common/PipelineDefines.h"
-    "../../amf/amf/public/samples/CPPSamples/common/PipelineElement.h"
-    "../../amf/amf/public/samples/CPPSamples/common/PlaybackPipeline.h"
-    "../../amf/amf/public/samples/CPPSamples/common/PlaybackPipelineBase.h"
-    "../../amf/amf/public/samples/CPPSamples/common/PollingThread.h"
-    "../../amf/amf/public/samples/CPPSamples/common/PreProcessingParams.h"
-    "../../amf/amf/public/samples/CPPSamples/common/RawStreamReader.h"
-    "../../amf/amf/public/samples/CPPSamples/common/StitchPipeline.h"
-    "../../amf/amf/public/samples/CPPSamples/common/StitchPipelineBase.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SurfaceGenerator.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SurfaceUtils.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChain.h"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenter.h"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceVulkan.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainVulkan.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainOpenGL.h"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterVulkan.h"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterOpenGL.h"
+set(ALL_PLATFORMS_HEADER_FILES
+    "${AMF_LOCATION}/public/common/AMFFactory.h"
+    "${AMF_LOCATION}/public/common/AMFMath.h"
+    "${AMF_LOCATION}/public/common/AMFSTL.h"
+    "${AMF_LOCATION}/public/common/ByteArray.h"
+    "${AMF_LOCATION}/public/common/CPUCaps.h"
+    "${AMF_LOCATION}/public/common/CurrentTimeImpl.h"
+    "${AMF_LOCATION}/public/common/InterfaceImpl.h"
+    "${AMF_LOCATION}/public/common/Json.h"
+    "${AMF_LOCATION}/public/common/JsonImpl.h"
+    "${AMF_LOCATION}/public/common/ObservableImpl.h"
+    "${AMF_LOCATION}/public/common/PropertyStorageExImpl.h"
+    "${AMF_LOCATION}/public/common/PropertyStorageImpl.h"
+    "${AMF_LOCATION}/public/common/Thread.h"
+    "${AMF_LOCATION}/public/common/TraceAdapter.h"
+    "${AMF_LOCATION}/public/common/VulkanImportTable.h"
+    "${AMF_LOCATION}/public/common/OpenGLImportTable.h"
+    "${AMF_LOCATION}/public/include/core/AudioBuffer.h"
+    "${AMF_LOCATION}/public/include/core/Buffer.h"
+    "${AMF_LOCATION}/public/include/core/Compute.h"
+    "${AMF_LOCATION}/public/include/core/ComputeFactory.h"
+    "${AMF_LOCATION}/public/include/core/Context.h"
+    "${AMF_LOCATION}/public/include/core/CurrentTime.h"
+    "${AMF_LOCATION}/public/include/core/Data.h"
+    "${AMF_LOCATION}/public/include/core/Debug.h"
+    "${AMF_LOCATION}/public/include/core/Dump.h"
+    "${AMF_LOCATION}/public/include/core/Factory.h"
+    "${AMF_LOCATION}/public/include/core/Interface.h"
+    "${AMF_LOCATION}/public/include/core/Plane.h"
+    "${AMF_LOCATION}/public/include/core/Platform.h"
+    "${AMF_LOCATION}/public/include/core/PropertyStorage.h"
+    "${AMF_LOCATION}/public/include/core/PropertyStorageEx.h"
+    "${AMF_LOCATION}/public/include/core/Result.h"
+    "${AMF_LOCATION}/public/include/core/Surface.h"
+    "${AMF_LOCATION}/public/include/core/Trace.h"
+    "${AMF_LOCATION}/public/include/core/Variant.h"
+    "${AMF_LOCATION}/public/include/core/Version.h"
+    "${AMF_LOCATION}/public/include/core/VulkanAMF.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/AMFHalfFloat.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenter.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/CAmfInit.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/CaptureVideoPipelineBase.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/CmdLineParser.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/CmdLogger.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/MiscHelpers.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/OpenCLLoader.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/ParametersStorage.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/Pipeline.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/PipelineDefines.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/PipelineElement.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/PlaybackPipeline.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/PlaybackPipelineBase.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/PollingThread.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/PreProcessingParams.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/RawStreamReader.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/StitchPipeline.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/StitchPipelineBase.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SurfaceGenerator.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SurfaceUtils.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChain.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenter.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceVulkan.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainVulkan.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainOpenGL.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterVulkan.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterOpenGL.h"
 )
 
 if(WIN32)
-set(HEADER_FILES ${HEADER_FILES}
-    "../../amf/amf/public/common/Windows/UtilsWindows.h"
-    "../../amf/amf/public/include/core/D3D12AMF.h"
-    "../../amf/amf/public/samples/CPPSamples/common/d3dx12.h"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceDX11.h"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceDX12.h"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceDX9.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDX11.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDX12.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDX9.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDXGI.h"
-    "../../amf/amf/public/samples/CPPSamples/common/SwapChainDXGIDecode.h"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterDX11.h"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterDX12.h"
-    "../../amf/amf/public/samples/CPPSamples/common/VideoPresenterDX9.h"
-    "../../amf/amf/public/src/components/DisplayCapture/DDAPISource.h"
-    "../../amf/amf/public/src/components/CursorCapture/CursorCaptureWin.h"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceOpenCL.h"
-    "../../amf/amf/public/samples/CPPSamples/common/DeviceOpenGL.h"
-    "../../amf/amf/public/samples/CPPSamples/common/Options.h"
-    "../../amf/amf/public/samples/CPPSamples/common/AudioPresenterWin.h"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadOpenGL.frag.h"
-    "../../amf/amf/public/samples/CPPSamples/common/QuadOpenGL.vert.h"
-    "../../amf/amf/public/src/components/DisplayCapture/DisplayCaptureImpl.h"
+set(HEADER_FILES ${ALL_PLATFORMS_HEADER_FILES}
+    "${AMF_LOCATION}/public/common/Windows/UtilsWindows.h"
+    "${AMF_LOCATION}/public/include/core/D3D12AMF.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/d3dx12.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceDX11.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceDX12.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceDX9.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDX11.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDX12.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDX9.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDXGI.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/SwapChainDXGIDecode.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterDX11.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterDX12.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/VideoPresenterDX9.h"
+    "${AMF_LOCATION}/public/src/components/DisplayCapture/DDAPISource.h"
+    "${AMF_LOCATION}/public/src/components/CursorCapture/CursorCaptureWin.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceOpenCL.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/DeviceOpenGL.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/Options.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenterWin.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadOpenGL.frag.h"
+    "${AMF_LOCATION}/public/samples/CPPSamples/common/QuadOpenGL.vert.h"
+    "${AMF_LOCATION}/public/src/components/DisplayCapture/DisplayCaptureImpl.h"
 )
-elseif(UNIX)
-    set(HEADER_FILES ${HEADER_FILES}
-    "../../amf/amf/public/src/components/CursorCapture/CursorCaptureLinux.h"
-    "../../amf/amf/public/samples/CPPSamples/common/AudioPresenterLinux.h"
-    "../../amf/amf/public/common/Linux/PulseAudioImportTable.h"
-    "../../amf/amf/public/src/components/AudioCapture/PulseAudioSimpleAPISource.h"
-    "../../amf/amf/public/src/components/AudioCapture/PulseAudioSimpleAPISourceFacade.h"
-    )
+elseif(LINUX OR ANDROID)
+    if (NOT ANDROID)
+        set(HEADER_FILES ${ALL_PLATFORMS_HEADER_FILES}
+        "${AMF_LOCATION}/public/src/components/CursorCapture/CursorCaptureLinux.h"
+        "${AMF_LOCATION}/public/samples/CPPSamples/common/AudioPresenterLinux.h"
+        "${AMF_LOCATION}/public/common/Linux/PulseAudioImportTable.h"
+        "${AMF_LOCATION}/public/src/components/AudioCapture/PulseAudioSimpleAPISource.h"
+        "${AMF_LOCATION}/public/src/components/AudioCapture/PulseAudioSimpleAPISourceFacade.h"
+        )
+    else()
+        set(HEADER_FILES ${ALL_PLATFORMS_HEADER_FILES}
+        )
+    endif()
 endif()
 
 if(WIN32)
@@ -281,12 +308,14 @@ add_custom_target(CompileShaders ALL DEPENDS ${SHADER_BINARIES})
 add_library(amf-public STATIC ${SOURCE_FILES} ${HEADER_FILES})
 
 # Add dependency
+if (WIN32 OR LINUX)
 add_dependencies(amf-public CompileShaders)
+endif()
 
 # Include directories
 target_include_directories(amf-public PRIVATE
     ../../amf
-    ../../amf/amf
+    ${AMF_LOCATION}
 )
 
 # Compile definitions
@@ -295,9 +324,11 @@ target_compile_definitions(amf-public PRIVATE
     $<$<CONFIG:Release>:NDEBUG;_LIB>
 )
 
+if(WIN32)
 # Link options
 target_link_options(amf-public PRIVATE
     $<$<CONFIG:Debug>:/DEBUG /INCREMENTAL>
     $<$<CONFIG:Release>:/LTCG /OPT:REF /OPT:ICF /INCREMENTAL:NO>
 )
+endif()
 

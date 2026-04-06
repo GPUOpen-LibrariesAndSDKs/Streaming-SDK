@@ -60,6 +60,10 @@ namespace ssdk::ctls
         XDisplay::Ptr   m_dpy;
         Cursor          m_cursor;
         Cursor          m_emptyCursor;
+        amf_handle      m_hWindow;
+        bool            m_bFirstRun;
+        bool            m_bShowCursor;
+        bool            m_bFullScreen;
     };
     //----------------------------------------------------------------------------------------------
 

@@ -35,6 +35,12 @@
 
 namespace ssdk::audio
 {
+    AudioDecodeEngine::AudioDecodeEngine(amf::AMFContext* context, int codecID) :
+        m_Context(context),
+        m_CodecID(codecID)
+    {
+    }
+
     AMF_RESULT AudioDecodeEngine::Init(amf::AMF_AUDIO_FORMAT format, int32_t channels, int32_t layout, int32_t samplingRate, amf::AMFBuffer* /*initBlock*/)
     {
         m_Format = format;

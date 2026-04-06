@@ -38,4 +38,3 @@ target_compile_definitions(ssdk PRIVATE
     $<$<CONFIG:Debug>:_DEBUG;_LIB>
     $<$<CONFIG:Release>:NDEBUG;_LIB>
 )
-

@@ -89,12 +89,6 @@ namespace ssdk::transport_common
         class ConnectionManagerCallback
         {
         public:
-            enum class DiscoveryAction      //  What to do when a server is found
-            {
-                STOP,                       //  Stop discovery
-                CONTINUE                    //  Continue discovery
-            };
-
             enum class TerminationReason
             {
                 CLOSED_BY_SERVER,           //  Connection was closed by the server
@@ -103,9 +97,6 @@ namespace ssdk::transport_common
             };
 
         public:
-            virtual DiscoveryAction OnServerDiscovered(const ServerDescriptor& server) = 0;      //  Called every time a new server is found
-            virtual void OnDiscoveryComplete() = 0;                                             //  Called when the discovery process is complete
-
             virtual void OnConnectionEstablished(const ServerDescriptor& server) = 0;           //  Called when a connection to a server was established and acknowledged by the server
             virtual void OnConnectionTerminated(TerminationReason reason) = 0;                  //  Called when a connection was terminated for any reason
         };
@@ -242,7 +233,7 @@ namespace ssdk::transport_common
         virtual Result SendAudioBuffer(StreamID StreamID, const TransmittableAudioBuffer& buf) = 0;
 
         //  Controllers:
-        virtual Result SendControllerEvent(const char* controlID, const amf::AMFVariant& event) = 0;
+        virtual Result SendControllerEvent(const char* controlID, const ssdk::ctls::CtlEvent& event) = 0;
         virtual Result SendTrackableDevicePose(const char* deviceID, const Pose& pose) = 0;
 
         //  Devices:

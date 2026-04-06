@@ -97,6 +97,8 @@ namespace ssdk::audio
             if (inputBuf != nullptr)
             {
                 amf::AMFLock    lock(&m_Guard);
+                inputBuf->SetPts(buffer.GetPts());
+                inputBuf->SetDuration(buffer.GetDuration());
                 pipeline->SubmitInput(inputBuf, buffer.IsDiscontinuity());
             }
             else

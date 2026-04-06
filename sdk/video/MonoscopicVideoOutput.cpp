@@ -42,7 +42,7 @@
 
 #include <queue>
 
-static constexpr const wchar_t* const AMF_FACILITY = L"ssdk::video::MonoscopicVideoOutput";
+#define AMF_FACILITY L"ssdk::video::MonoscopicVideoOutput"
 
 namespace ssdk::video
 {

@@ -155,7 +155,7 @@ namespace ssdk::util
                                 lowerFrameRate = true;
                                 AMFTraceInfo(AMF_FACILITY, L"Client is requesting key frames, QoS is lowering bitrate and frame rate, bandwidth %5.2f Mbps", float(m_BitrateHistory.GetAverage()) / 1024 / 1024);
                             }
-                            if (it->second.m_DecoderQueueDepth > 0)
+                            if (it->second.m_DecoderQueueDepth > m_InitParams.acceptableDecoderQueueDepth)
                             {
                                 lowerFrameRate = true;
                                 if (it->second.m_DecoderQueueDepth > m_InitParams.maxDecoderQueueDepth)
@@ -169,7 +169,7 @@ namespace ssdk::util
                                     immediate = true;
                                     if (panic == false)
                                     {
-                                        if (++it->second.m_DecoderQueueOverflowCnt > MAX_DECODER_OVERFLOW_EVENTS)
+                                        if (it->second.m_DecoderQueueOverflowCnt > MAX_DECODER_OVERFLOW_EVENTS)
                                         {
                                             it->second.m_DecoderQueueOverflowFps = m_Framerate;
                                             AMFTraceWarning(AMF_FACILITY, L"Client cannot keep up at %5.2f, decoder queue depth %lld, overflow count %d, QoS is limiting frame rate", m_Framerate, it->second.m_DecoderQueueDepth, it->second.m_DecoderQueueOverflowCnt);
@@ -342,11 +342,11 @@ namespace ssdk::util
             sessionInfo.m_ForceIDRReqCount = forceIDRReqCount;
             sessionInfo.m_ForceIDRReqCountUpdateTime = lastStatsTime;
             sessionInfo.m_DecoderQueueDepth = decoderQueueDepth;
-            if (decoderQueueDepth > 0)
+            if (decoderQueueDepth > m_InitParams.maxDecoderQueueDepth)
             {
-//                sessionInfo.m_DecoderQueueOverflowCnt++;
-//                sessionInfo.m_DecoderQueueOverflowFps = m_Framerate;
-//                AMFTraceWarning(AMF_FACILITY, L"Decoder overflow at %5.2f fps, depth is %lld, count=%d", m_Framerate, decoderQueueDepth, sessionInfo.m_DecoderQueueOverflowCnt);
+                sessionInfo.m_DecoderQueueOverflowCnt++;
+                sessionInfo.m_DecoderQueueOverflowFps = m_Framerate;
+                AMFTraceWarning(AMF_FACILITY, L"Decoder overflow at %5.2f fps, depth is %lld, count=%d", m_Framerate, decoderQueueDepth, sessionInfo.m_DecoderQueueOverflowCnt);
             }
         }
 

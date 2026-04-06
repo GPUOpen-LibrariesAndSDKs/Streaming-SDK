@@ -6,6 +6,7 @@ set(MBEDTLS_ROOT "${CMAKE_SOURCE_DIR}/mbedtls")
 
 set(MBEDTLS_SOURCES
     ${MBEDTLS_ROOT}/library/aes.c
+    ${MBEDTLS_ROOT}/library/aesce.c
     ${MBEDTLS_ROOT}/library/cipher.c
     ${MBEDTLS_ROOT}/library/platform.c
     ${MBEDTLS_ROOT}/library/entropy.c
@@ -22,6 +23,7 @@ set(MBEDTLS_SOURCES
     ${MBEDTLS_ROOT}/library/platform_util.c
     ${MBEDTLS_ROOT}/library/ecdsa.c
     ${MBEDTLS_ROOT}/library/ecp.c
+    ${MBEDTLS_ROOT}/library/padlock.c
 
     # Add any other necessary source files here
 )

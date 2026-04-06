@@ -37,18 +37,6 @@ THE SOFTWARE.
 
 #include "util/pipeline/AVPipeline.h"
 #include "video/MonoscopicVideoInput.h"
-#include "util/pipeline/PipelineSlot.h"
-#include "util/pipeline/AVSynchronizer.h"
-#include "util/stats/ClientStatsManager.h"
-
-#include "amf/public/include/components/VideoConverter.h"
-#include "amf/public/include/components/VQEnhancer.h"
-
-#include "amf/public/samples/CPPSamples/common/VideoPresenter.h"
-
-#include "amf/public/common/Thread.h"
-
-#include <memory>
 
 namespace ssdk::video
 {
@@ -59,48 +47,40 @@ namespace ssdk::video
     public:
         typedef std::shared_ptr<VideoReceiverPipeline>  Ptr;
 
+    protected:
+        VideoReceiverPipeline(amf::AMFContext* context);
+
+        AMF_RESULT Init(bool preserveAspectRatio);
     public:
-        VideoReceiverPipeline(amf::AMFContext* context, VideoPresenterPtr presenter, ssdk::util::AVSynchronizer::Ptr avSynchronizer);
-        ~VideoReceiverPipeline();
-
-        AMF_RESULT Init(size_t uvdInstance, bool preserveAspectRatio, bool hqUpscale, bool denoise);
-        void Terminate();
-        void SetStatsManager(ssdk::util::ClientStatsManager::Ptr statsManager);
-
         virtual AMF_RESULT OnInputChanged(const char* codec, ssdk::transport_common::InitID initID, const AMFSize& streamResolution, const AMFRect& viewport, uint32_t bitDepth, bool stereoscopic, bool foveated, amf::AMFBuffer* initBlock);
-        virtual AMF_RESULT SubmitInput(amf::AMFBuffer* compressedFrame, ssdk::transport_common::VideoFrame::SubframeType subframeType, bool discontinuity);
+        virtual AMF_RESULT SubmitInput(amf::AMFBuffer* compressedFrame, ssdk::transport_common::VideoFrame::SubframeType subframeType, bool discontinuity) = 0;
 
-        AMFRect GetViewport() const { return m_Viewport; };
+        inline const std::string& GetCodec() const noexcept { amf::AMFLock lock(&m_Guard); return m_Codec; }
+
+        inline bool IsAspectRatioPreserved() const noexcept { amf::AMFLock lock(&m_Guard); return m_PreserveAspectRatio; }
+        inline bool IsStereoscopic() const noexcept { amf::AMFLock lock(&m_Guard); return m_Stereoscopic; }
+        inline bool IsFoveated() const noexcept { amf::AMFLock lock(&m_Guard); return m_Foveated; }
+        
+        const AMFSize& GetStreamResolution() const noexcept { amf::AMFLock lock(&m_Guard); return m_StreamResolution; }
+        const AMFRect& GetStreamViewport() const noexcept { amf::AMFLock lock(&m_Guard); return m_Viewport; }
+
+        uint32_t GetBitDepth() const noexcept { amf::AMFLock lock(&m_Guard); return m_BitDepth; }
+
+        inline ssdk::transport_common::InitID GetLastInitID() const noexcept { amf::AMFLock lock(&m_Guard); return m_InitID; }
+        AMF_RESULT GetLastInitBlock(amf::AMFBuffer** initBlock) const;
 
     protected:
-        virtual void OnVideoFrame(amf::AMFSurface* frame) override; //  This is a callback to video input (decoder), which is called when a decoder produces a frame and it needs to be submitted to the rest of the pipeline
+        mutable amf::AMFCriticalSection     m_Guard;
 
-    private:
-        AMF_RESULT InitConverter();
-        AMF_RESULT InitScaler();
-        AMF_RESULT InitDenoiser();
+        std::string         m_Codec;
 
-    private:
-        mutable amf::AMFCriticalSection         m_Guard;
-
-        AMFRect                                 m_Viewport = {};
-        amf::AMF_SURFACE_FORMAT                 m_OutputFormat = amf::AMF_SURFACE_FORMAT::AMF_SURFACE_UNKNOWN;
-        uint32_t                                m_BitDepth = 0;
-        AMF_COLOR_RANGE_ENUM                    m_ColorRange = AMF_COLOR_RANGE_ENUM::AMF_COLOR_RANGE_FULL;
-
-        ssdk::video::MonoscopicVideoInput::Ptr  m_Input;
-        amf::AMFComponentPtr                    m_VideoConverter;
-        amf::AMFComponentPtr                    m_Denoiser;
-        amf::AMFComponentPtr                    m_Scaler;
-        VideoPresenterPtr                       m_Presenter;
-        ssdk::util::AVSynchronizer::Ptr         m_AVSynchronizer;
-        ssdk::util::ClientStatsManager::Ptr     m_StatsManager;
-
-        ssdk::util::PipelineSlot::Ptr           m_PipelineHead;
-
-        bool                                    m_PreserveAspectRatio = true;
-        bool                                    m_EnableHQUpscale = true;
-        bool                                    m_EnableDenoiser = true;
-        bool                                    m_ExclusiveFullScreen = true;
+        bool                m_PreserveAspectRatio = true;
+        AMFRect             m_Viewport = {};
+        bool                m_Stereoscopic = false;
+        bool                m_Foveated = false;
+        uint32_t            m_BitDepth = 8;
+        AMFSize             m_StreamResolution = {};
+        amf::AMFBufferPtr               m_InitBlock;
+        ssdk::transport_common::InitID  m_InitID = -1;
     };
 }

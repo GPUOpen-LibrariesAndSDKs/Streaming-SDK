@@ -38,6 +38,8 @@ THE SOFTWARE.
 #include "SimpleStreamingClient.h"
 #include "SimpleStreamingClientLinux.h"
 #include "sdk/controllers/client/ControllerManager.h"
+#include "sdk/controllers/client/lnx/MouseControllerLnx.h"
+#include "sdk/controllers/client/lnx/KeyboardControllerLnx.h"
 #include "sdk/controllers/client/lnx/MouseCursorLnx.h"
 #include "sdk/controllers/client/lnx/X11TouchController.h"
 #include "amf/public/samples/CPPSamples/common/AudioPresenterLinux.h"
@@ -410,8 +412,8 @@ bool SimpleStreamingClientLinux::InitControllers()
     bool useRawDataInput = true;
     GetParam(PARAM_NAME_RELATIVE_MOUSE_CAPTURE, useRawDataInput);
 
-    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::MouseController(m_ControllerManager, m_VideoPresenter, m_VideoPipeline, (Display*)m_hDisplayInst, m_hMainWindow, useRawDataInput)));
-    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::KeyboardController(m_ControllerManager)));
+    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::MouseControllerLnx(m_ControllerManager, m_VideoPresenter, m_VideoPipeline, (Display*)m_hDisplayInst, m_hMainWindow, useRawDataInput)));
+    m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::KeyboardControllerLnx(m_ControllerManager)));
     CreateGameControllers();
     m_ControllerManager->AddController(ssdk::ctls::ControllerBase::Ptr(new ssdk::ctls::X11TouchController(m_ControllerManager, (Display*)m_hDisplayInst, (Window)m_hMainWindow, m_VideoPipeline)));
 

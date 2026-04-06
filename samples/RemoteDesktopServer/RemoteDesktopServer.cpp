@@ -42,6 +42,7 @@ THE SOFTWARE.
 
 #include "sdk/audio/encoders/AudioEncoderAAC.h"
 #include "sdk/audio/encoders/AudioEncoderOPUS.h"
+#include "sdk/audio/encoders/AudioEncoderPCM.h"
 
 #include "amf/public/include/components/DisplayCapture.h"
 #include "amf/public/include/components/AudioCapture.h"
@@ -59,7 +60,7 @@ THE SOFTWARE.
 #include <time.h>
 #include <cstdio>
 
-static constexpr const wchar_t* const AMF_FACILITY = L"RemoteDesktopServer";
+#define AMF_FACILITY L"RemoteDesktopServer"
 
 //  Command line parameters
 static constexpr const wchar_t* PARAM_NAME_SHUTDOWN = L"shutdown";
@@ -115,6 +116,7 @@ static constexpr const wchar_t* VIDEO_CODEC_EFC_OFF = L"EFCOFF";
 //  Values for PARAM_NAME_AUDIO_CODEC
 static constexpr const wchar_t* AUDIO_CODEC_AAC = L"AAC";
 static constexpr const wchar_t* AUDIO_CODEC_OPUS = L"OPUS";
+static constexpr const wchar_t* AUDIO_CODEC_PCM = L"PCM";
 
 //  Values for PARAM_NAME_AUDIO_CHANNELS
 static constexpr const wchar_t* AUDIO_CHANNELS_MONO = L"1";
@@ -127,7 +129,7 @@ static constexpr const wchar_t* AUDIO_CHANNELS_SURROUND_SUB = L"5.1";
 
 // Default parameter values
 static constexpr const unsigned short DEFAULT_PORT = 1235;
-static constexpr const int64_t  DEFAULT_DATAGRAM_SIZE = 65507;
+static constexpr const int64_t  DEFAULT_DATAGRAM_SIZE = 1024;
 static constexpr const wchar_t* DEFAULT_LOG_FILENAME = L"./RemoteDesktopServer.log";
 static constexpr const char*    DEFAULT_BIND_INTERFACE = "*";
 static constexpr const char*    DEFAULT_SERVER_HOSTNAME = "RemoteDesktopServer";
@@ -358,7 +360,9 @@ void RemoteDesktopServer::ShutdownRunningServer()
 
 bool RemoteDesktopServer::OnAppInit()
 {
-    GetParam(PARAM_NAME_MAX_CONNECTIONS, m_MaxConcurrentConnections);
+    int64_t maxConnections = 1;
+    GetParam(PARAM_NAME_MAX_CONNECTIONS, maxConnections);
+    m_MaxConcurrentConnections = static_cast<size_t>(maxConnections);
     return true;
 }
 
@@ -700,6 +704,10 @@ bool RemoteDesktopServer::InitAudioCodec()
     {
         encoder = ssdk::audio::AudioEncodeEngine::Ptr(new ssdk::audio::AudioEncoderOPUS(m_Context));
     }
+    else if (codec == AUDIO_CODEC_PCM)
+    {
+        encoder = ssdk::audio::AudioEncodeEngine::Ptr(new ssdk::audio::AudioEncoderPCM(m_Context));
+    }
     else
     {
         AMFTraceError(AMF_FACILITY, L"Invalid codec: %S", codec.c_str());
@@ -820,7 +828,6 @@ void RemoteDesktopServer::TerminateNetwork()
         m_Transport->Shutdown();
         m_Transport = nullptr;
     }
-    m_CurConnectionsCnt = 0;
     AMFTraceDebug(AMF_FACILITY, L"Server terminated");
 }
 
@@ -1006,7 +1013,7 @@ ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction
 {
     ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction action = ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction::REFUSE;
     amf::AMFLock lock(&m_Guard);
-    if (m_AVStreamerInitialized == true && m_CurConnectionsCnt < m_MaxConcurrentConnections)
+    if (m_AVStreamerInitialized == true && m_ActiveSessions.size() < m_MaxConcurrentConnections)
     {
         action = ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction::ACCEPT;
         AMFTraceInfo(AMF_FACILITY, L"Server received and accepted a discovery request from client \"%S\"", clientID);
@@ -1022,46 +1029,71 @@ ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction
 {
     ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction action = ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction::REFUSE;
     amf::AMFLock lock(&m_Guard);
-    if (m_AVStreamerInitialized == true && m_CurConnectionsCnt++ < m_MaxConcurrentConnections)
+    if (m_AVStreamerInitialized == true)
     {
-        action = ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction::ACCEPT;
-        AMFTraceInfo(AMF_FACILITY, L"Server received and accepted a connection request from client \"%S\", session ID: %lld as %s", clientID, session, role == ClientRole::CONTROLLER ? L"controller" : L"viewer");
+        
+        SessionClientBinding clientSessionMapping(session, clientID);
+        if (m_ActiveSessions.find(clientSessionMapping) == m_ActiveSessions.end())
+        {
+            if (m_ActiveSessions.size() < m_MaxConcurrentConnections)
+            {
+                m_ActiveSessions.insert(clientSessionMapping);
+                action = ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction::ACCEPT;
+                AMFTraceInfo(AMF_FACILITY, L"Server received and accepted a connection request from client \"%S\", session ID: %lld as %s", clientID, session, role == ClientRole::CONTROLLER ? L"controller" : L"viewer");
+            }
+            else
+            {
+                AMFTraceInfo(AMF_FACILITY, L"Server received and rejected a connection request from client \"%S\", session ID: %lld because the number of concurrent connections of %lld has been reached", clientID, session, m_MaxConcurrentConnections);
+            }
+        }
+        else
+        {
+            action = ssdk::transport_common::ServerTransport::ConnectionManagerCallback::ClientAction::ACCEPT;
+            AMFTraceWarning(AMF_FACILITY, L"Server received a connection request from the existing client: \"%S\", session ID: %lld", clientID, session);
+        }
     }
     else
     {
-        AMFTraceInfo(AMF_FACILITY, L"Server received and rejected a connection request from client \"%S\", session ID: %lld because the number of concurrent connections of %lld has been exceeded", clientID, session, m_MaxConcurrentConnections);
+        AMFTraceError(AMF_FACILITY, L"Server received and rejected a connection request from client \"%S\", session ID: %lld because the streamer has not been initialized, this likely indicates a bug", clientID, session);
     }
     return action;
 }
 
 void RemoteDesktopServer::OnClientSubscribed(ssdk::transport_common::SessionHandle /*session*/)
 {
-    if (m_CurConnectionsCnt > 0 && m_pControllerManager != nullptr && m_pControllerManager->Started() == false)
+    amf::AMFLock lock(&m_Guard);
+    if (m_ActiveSessions.size() > 0 && m_pControllerManager != nullptr && m_pControllerManager->Started() == false)
     {
         m_pControllerManager->Start();
+        AMFTraceInfo(AMF_FACILITY, L"Controller manager started");
     }
 }
 
 void RemoteDesktopServer::OnClientDisconnected(ssdk::transport_common::SessionHandle session, DisconnectReason reason)
 {
     ssdk::ctls::svr::ControllerManager::Ptr pControllerManager;
-    bool stop = false;
     {
         amf::AMFLock lock(&m_Guard);
         pControllerManager = m_pControllerManager;
-        if (m_CurConnectionsCnt > 0)
+
+        SessionClientBinding::Set::iterator found = m_ActiveSessions.end();
+        for (SessionClientBinding::Set::iterator it = m_ActiveSessions.begin(); it != m_ActiveSessions.end(); ++it)
         {
-            --m_CurConnectionsCnt;
+            if (it->GetSessionHandle() == session)
+            {
+                found = it;
+                break;
+            }
+        }
+
+        if (m_ActiveSessions.size() > 0 && found != m_ActiveSessions.end())
+        {
+            m_ActiveSessions.erase(found);
             if (m_AVStreamerInitialized == true)
             {
                 m_AVStreamer->OnSessionDisconnected(session);
             }
-            AMFTraceInfo(AMF_FACILITY, L"Client with session ID: %lld %s, remaining clients: %lld", session, reason == DisconnectReason::CLIENT_DISCONNECTED ? L"disconnected" : L"timed out", m_CurConnectionsCnt);
-
-            if (m_CurConnectionsCnt == 0 && m_pControllerManager != nullptr && m_pControllerManager->Started() == true)
-            {
-                stop = true;
-            }
+            AMFTraceInfo(AMF_FACILITY, L"Client with session ID: %lld %s, remaining clients: %lld", session, reason == DisconnectReason::CLIENT_DISCONNECTED ? L"disconnected" : L"timed out", m_ActiveSessions.size());
         }
 #ifdef _DEBUG
         else
@@ -1070,8 +1102,9 @@ void RemoteDesktopServer::OnClientDisconnected(ssdk::transport_common::SessionHa
         }
 #endif
     }
-    if (stop == true && pControllerManager != nullptr)
+    if (m_ActiveSessions.size() == 0 && m_pControllerManager != nullptr && m_pControllerManager->Started() == true)
     {
         pControllerManager->Stop();
+        AMFTraceInfo(AMF_FACILITY, L"Controller manager stopped");
     }
 }

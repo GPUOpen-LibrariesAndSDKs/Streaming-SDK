@@ -54,6 +54,13 @@ typedef struct {
     int x;
     int y;
 } WindowPoint;
+#elif defined(__ANDROID__)
+#include <android/input.h>
+typedef const AInputEvent* WindowMessage;
+typedef struct {
+    int x;
+    int y;
+} WindowPoint;
 #endif
 
 namespace ssdk::ctls
@@ -85,10 +92,11 @@ namespace ssdk::ctls
     class ControllerBase
     {
     public:
+        typedef std::shared_ptr<ControllerBase> Ptr;
+
+    public:
         ControllerBase(ControllerManagerPtr pControllerManager);
         virtual ~ControllerBase();
-
-        typedef std::shared_ptr<ControllerBase> Ptr;
 
         virtual const char*       AMF_STD_CALL GetID() const { return m_ID.c_str(); }
         virtual AMF_RESULT        AMF_STD_CALL SetID(const char* id) { m_ID = id; return AMF_OK; }
@@ -98,12 +106,12 @@ namespace ssdk::ctls
 
         // ControllerBase interface
         virtual AMF_RESULT  AMF_STD_CALL ProcessMessage(const WindowMessage& /*msg*/) { return AMF_FAIL; }
-#if !defined(_WIN32)
+#if defined(__linux__) && !defined(__ANDROID__)
         virtual AMF_RESULT  AMF_STD_CALL ProcessMessageExt(const ExtWindowMessage& /*msg*/) { return AMF_FAIL; }
 #endif
         virtual void        AMF_STD_CALL ProcessInputEvent(const char* /*eventID*/, const amf::AMFVariant& /*event*/) {};
-        virtual void        AMF_STD_CALL OnConnectionEstablished() {};
-        virtual void        AMF_STD_CALL OnConnectionTerminated() {};
+        virtual void        AMF_STD_CALL OnConnectionEstablished();
+        virtual void        AMF_STD_CALL OnConnectionTerminated();
         virtual void        AMF_STD_CALL UpdateSensors() {};
         virtual void        AMF_STD_CALL ReleaseModifiers() {};
 

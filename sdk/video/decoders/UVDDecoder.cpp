@@ -55,21 +55,9 @@ namespace ssdk::video
         AMF_RESULT result;
 
         //  Put the decoder into the low latency mode to avoid frame accumulation
+#if !defined(__ANDROID__) //  Not implemented on Android
         result = m_Decoder->SetProperty(AMF_TIMESTAMP_MODE, AMF_TS_DECODE);
         AMF_RETURN_IF_FAILED(result, L"UVD Video decoder failed to set the timestamp mode to AMF_TS_DECODE, result = %s", amf::AMFGetResultText(result));
-
-        result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, AMF_VIDEO_DECODER_MODE_LOW_LATENCY);
-        AMF_RETURN_IF_FAILED(result, L"UVD Video decoder failed to reorder mode to low latency mode, result = %s", amf::AMFGetResultText(result));
-
-        result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_LOW_LATENCY, true);
-        if (result != AMF_OK)
-        {
-            AMFTraceError(AMF_FACILITY, L"UVD Video decoder failed to enable low latency mode, result = %s", amf::AMFGetResultText(result));
-
-        }
-        
-        result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_FRAME_RATE, double(frameRate));
-        AMF_RETURN_IF_FAILED(result, L"UVD Video decoder failed to set frame rate to %5.2f, result = %s", double(frameRate), amf::AMFGetResultText(result));
 
         constexpr static int surfacePoolSize = 20;
         result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_SURFACE_POOL_SIZE, int64_t(surfacePoolSize));
@@ -78,6 +66,20 @@ namespace ssdk::video
         result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_FULL_RANGE_COLOR, true);
         AMF_RETURN_IF_FAILED(result, L"UVD Video decoder failed to set the full color range, result = %s", amf::AMFGetResultText(result));
 
+        result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_LOW_LATENCY, true);
+        if (result != AMF_OK)
+        {
+            AMFTraceWarning(AMF_FACILITY, L"UVD Video decoder failed to enable low latency mode, you may experience higher than normal latency, result = %s", amf::AMFGetResultText(result));
+        }
+#endif
+        result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_REORDER_MODE, AMF_VIDEO_DECODER_MODE_LOW_LATENCY);
+        AMF_RETURN_IF_FAILED(result, L"UVD Video decoder failed to reorder mode to low latency mode, result = %s", amf::AMFGetResultText(result));
+
+        if (frameRate != 0)
+        {
+            result = m_Decoder->SetProperty(AMF_VIDEO_DECODER_FRAME_RATE, double(frameRate));
+            AMF_RETURN_IF_FAILED(result, L"UVD Video decoder failed to set frame rate to %5.2f, result = %s", double(frameRate), amf::AMFGetResultText(result));
+        }
         amf::AMFCapsPtr decoderCaps(m_Decoder);
         if (decoderCaps != nullptr)
         {
@@ -95,6 +97,15 @@ namespace ssdk::video
             AMF_RETURN_IF_FAILED(result, L"Failed to set the ExtraData block on the UVD video decoder, result = %s", amf::AMFGetResultText(result));
         }
 
-        return VideoDecodeEngine::Init(format, resolution, frameRate, initBlock);
+        result = VideoDecodeEngine::Init(format, resolution, frameRate, initBlock);
+        if (result == AMF_OK)
+        {
+            AMFTraceInfo(AMF_FACILITY, L"Video decode engine initialized successfully");
+        }
+        else
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to initialize video decoder, result = %s", amf::AMFGetResultText(result));
+        }
+        return result;
     }
 }

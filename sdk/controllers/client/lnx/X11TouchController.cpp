@@ -40,7 +40,7 @@ namespace ssdk::ctls
 
 #if !defined(_WIN32)
     X11TouchController::X11TouchController(ControllerManagerPtr pControllerManager, Display* dpy, Window hWnd,
-        ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline) :
+        ssdk::video::VideoReceiverPipelinePC::Ptr pVideoPipeline) :
         ControllerBase(pControllerManager),
         m_pDpy(dpy),
         m_hWnd(hWnd),
@@ -51,30 +51,6 @@ namespace ssdk::ctls
         m_EventIDs.push_back(m_ID + DEVICE_TOUCHSCREEN_TOUCH);
     }
 
-    //-------------------------------------------------------------------------------------------------
-    void X11TouchController::OnConnectionEstablished()
-    {
-        if (m_pControllerManager != nullptr)
-        {
-            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
-            if (pClientTransport != nullptr)
-            {
-                pClientTransport->SendDeviceConnected(GetID(), GetType(), m_Description.c_str());
-            }
-        }
-    }
-
-    void X11TouchController::OnConnectionTerminated()
-    {
-        if (m_pControllerManager != nullptr)
-        {
-            ssdk::transport_common::ClientTransport::Ptr pClientTransport = m_pControllerManager->GetClientTransport();
-            if (pClientTransport != nullptr)
-            {
-                pClientTransport->SendDeviceDisconnected(GetID());
-            }
-        }
-    }
 
     //-------------------------------------------------------------------------------------------------
     AMF_RESULT AMF_STD_CALL X11TouchController::ProcessMessageExt(const ExtWindowMessage& msg)
@@ -115,19 +91,12 @@ namespace ssdk::ctls
 
         if (m_pControllerManager != nullptr)
         {
-            m_pControllerManager->SendControllerEvent(m_EventIDs[0].c_str(), &ev);
+            m_pControllerManager->SendControllerEvent(m_EventIDs[0].c_str(), ev);
         }
 
         return AMF_OK;
     }
 
-    //-------------------------------------------------------------------------------------------------
-    void X11TouchController::ProcessInputEvent(const char* eventID, const amf::AMFVariant& /*event*/)
-    {
-        if (strcmp(eventID, DEVICE_TOUCHSCREEN_TOUCH) == 0)
-        {
-        }
-    }
 
     //-------------------------------------------------------------------------------------------------
     X11TouchController::TouchPoint X11TouchController::NormalizeTouchPoint(TouchPoint touchPoint) const
@@ -143,7 +112,7 @@ namespace ssdk::ctls
         AMFRect rcViewport{ 0, 0, frameSize.width, frameSize.height };
         if (m_pVideoPipeline != nullptr)
         {
-            rcViewport = m_pVideoPipeline->GetViewport();
+            rcViewport = m_pVideoPipeline->GetStreamViewport();
         }
         
         double viewportAspectRatio = double(rcViewport.Width()) / double(rcViewport.Height());

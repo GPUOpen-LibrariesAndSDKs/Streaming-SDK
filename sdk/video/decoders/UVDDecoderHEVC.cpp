@@ -42,15 +42,26 @@ namespace ssdk::video
     UVDDecoderHEVC::UVDDecoderHEVC(amf::AMFContext* context, size_t instance) :
         UVDDecoder(context, instance)
     {
+        AMF_RESULT result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFVideoDecoderHW_H265_HEVC, &m_Decoder);
+        if (result != AMF_OK)
+        {
+            AMFTraceError(AMF_FACILITY, L"Failed to create an HEVC decoder, result=%s", amf::AMFGetResultText(result));
+        }
     }
+
     AMF_RESULT UVDDecoderHEVC::Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& resolution, float frameRate, amf::AMFBuffer* initBlock)
     {
         if (m_Decoder == nullptr || format != m_Format)
         {
+            amf::AMFComponentPtr oldDecoder(m_Decoder);
             m_Decoder = nullptr;
             AMF_RESULT result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, format == amf::AMF_SURFACE_FORMAT::AMF_SURFACE_P010 ? AMFVideoDecoderHW_H265_MAIN10 : AMFVideoDecoderHW_H265_HEVC, &m_Decoder);
-            AMF_RETURN_IF_FAILED(result, L"Failed to create a HEVC UVD decoder, result=%s", amf::AMFGetResultText(result));
+            AMF_RETURN_IF_FAILED(result, L"Failed to create a HEVC decoder, result=%s", amf::AMFGetResultText(result));
             m_Format = format;
+            if (oldDecoder != nullptr)
+            {
+                oldDecoder->CopyTo(m_Decoder, false);
+            }
         }
         return UVDDecoder::Init(format, resolution, frameRate, initBlock);
     }

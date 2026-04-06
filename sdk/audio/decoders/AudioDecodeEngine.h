@@ -43,6 +43,7 @@
 #include "amf/public/include/core/Context.h"
 #include "amf/public/include/core/AudioBuffer.h"
 #include "amf/public/include/components/Component.h"
+#include "amf/public/common/Thread.h"
 
 #include <memory>
 
@@ -54,7 +55,7 @@ namespace ssdk::audio
         typedef std::shared_ptr<AudioDecodeEngine>  Ptr;
 
     protected:
-        AudioDecodeEngine() = default;
+        AudioDecodeEngine(amf::AMFContext* context, int codecID);
 
     private:
         AudioDecodeEngine(const AudioDecodeEngine&) = delete;
@@ -79,9 +80,11 @@ namespace ssdk::audio
         inline int32_t GetSamplingRate() const noexcept { return m_SamplingRate; }
 
     protected:
+        amf::AMFContextPtr      m_Context;
         amf::AMF_AUDIO_FORMAT   m_Format = amf::AMF_AUDIO_FORMAT::AMFAF_UNKNOWN;
         int32_t                 m_Channels = 2; //  Stereo by default
         int32_t                 m_Layout = amf::AMF_AUDIO_CHANNEL_LAYOUT::AMFACL_SPEAKER_FRONT_LEFT | amf::AMF_AUDIO_CHANNEL_LAYOUT::AMFACL_SPEAKER_BACK_RIGHT;
         int32_t                 m_SamplingRate = 44100;
+        int                     m_CodecID = 0;
     };
 }

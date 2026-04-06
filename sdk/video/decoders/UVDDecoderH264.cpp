@@ -42,16 +42,11 @@ namespace ssdk::video
     UVDDecoderH264::UVDDecoderH264(amf::AMFContext* context, size_t instance) :
         UVDDecoder(context, instance)
     {
-    }
-
-    AMF_RESULT UVDDecoderH264::Init(amf::AMF_SURFACE_FORMAT format, const AMFSize& resolution, float frameRate, amf::AMFBuffer* initBlock)
-    {
-        if (m_Decoder == nullptr)
+        AMF_RESULT result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFVideoDecoderUVD_H264_AVC, &m_Decoder);
+        if (result != AMF_OK)
         {
-            AMF_RESULT result = g_AMFFactory.GetFactory()->CreateComponent(m_Context, AMFVideoDecoderUVD_H264_AVC, &m_Decoder);
-            AMF_RETURN_IF_FAILED(result, L"Failed to create an h.264 UVD decoder, result=%s", amf::AMFGetResultText(result));
+            AMFTraceError(AMF_FACILITY, L"Failed to create an h.264 UVD decoder, result=%s", amf::AMFGetResultText(result));
         }
-        return UVDDecoder::Init(format, resolution, frameRate, initBlock);
     }
 
     const char* UVDDecoderH264::GetCodecName() const noexcept

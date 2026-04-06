@@ -55,8 +55,12 @@ namespace ssdk::util
     protected:
         AVPipeline(amf::AMFContext* context);
 
+        inline void SetInitID(transport_common::InitID id) { m_InitID = id; }
+
     public:
         virtual ~AVPipeline() = default;
+
+        inline transport_common::InitID GetInitID() const noexcept { return m_InitID; }
 
     protected:
         amf::AMFContextPtr          m_Context;

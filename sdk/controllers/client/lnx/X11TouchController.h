@@ -33,7 +33,7 @@
 #pragma once
 
 #include "../ControllerBase.h"
-#include "sdk/video/VideoReceiverPipeline.h"
+#include "sdk/video/VideoReceiverPipelinePC.h"
 
 namespace ssdk::ctls
 {
@@ -42,7 +42,7 @@ namespace ssdk::ctls
     {
     public:
         X11TouchController(ControllerManagerPtr pControllerManager, Display* dpy, Window hWnd,
-            ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline);
+            ssdk::video::VideoReceiverPipelinePC::Ptr pVideoPipeline);
         ~X11TouchController() = default;
 
         // ANSI interface;
@@ -51,9 +51,6 @@ namespace ssdk::ctls
         virtual AMF_RESULT  AMF_STD_CALL Update() { return AMF_OK; }
         // ControllerBase interface
         virtual AMF_RESULT  AMF_STD_CALL ProcessMessageExt(const ExtWindowMessage& msg) override;
-        virtual void        AMF_STD_CALL ProcessInputEvent(const char* eventID, const amf::AMFVariant& event) override;
-        virtual void        AMF_STD_CALL OnConnectionEstablished() override;
-        virtual void        AMF_STD_CALL OnConnectionTerminated() override;
 
     private:
         struct TouchPoint
@@ -67,7 +64,7 @@ namespace ssdk::ctls
         TouchPoint NormalizeTouchPoint(TouchPoint touchPoint) const;
         Display* m_pDpy{};
         Window m_hWnd{};
-        ssdk::video::VideoReceiverPipeline::Ptr m_pVideoPipeline;
+        ssdk::video::VideoReceiverPipelinePC::Ptr m_pVideoPipeline;
     };
 #endif
 }

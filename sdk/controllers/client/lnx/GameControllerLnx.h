@@ -1,4 +1,4 @@
-// 
+//
 // Notice Regarding Standards.  AMD does not provide a license or sublicense to
 // any Intellectual Property Rights relating to any standards, including but not
 // limited to any audio and/or video codec technologies such as MPEG-2, MPEG-4;
@@ -6,9 +6,9 @@
 // (collectively, the "Media Technologies"). For clarity, you will pay any
 // royalties due for such third party technologies, which may include the Media
 // Technologies that are owed as a result of AMD providing the Software to you.
-// 
-// MIT license 
-// 
+//
+// MIT license
+//
 //
 // Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
 //
@@ -71,10 +71,10 @@ namespace ssdk::ctls
         int                     m_rumble_effect = -1;
         CONNECTION_TYPE         m_connectionType = BLUETOOTH;
     protected:
-        void AMF_STD_CALL FireEvent(const char* id, CtlEvent* ev);
+        void AMF_STD_CALL FireEvent(const char* id, const CtlEvent& ev);
 
         amf::AMFCriticalSection m_Guard;
-        struct DEVICE_STATE
+        struct ControlState
         {
             int hat0x = 0;
             int hat0y = 0;
@@ -84,7 +84,7 @@ namespace ssdk::ctls
             int absY = 0;
             bool updated = false;
         };
-        DEVICE_STATE m_State;
+        ControlState m_State;
 
         struct Vibration
         {

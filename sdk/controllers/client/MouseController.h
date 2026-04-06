@@ -35,11 +35,6 @@
 #include "ControllerBase.h"
 #include "amf/public/common/ByteArray.h"
 #include "amf/public/samples/CPPSamples/common/VideoPresenter.h"
-#include "sdk/video/VideoReceiverPipeline.h"
-
-#if defined(__linux)
-#include "public/common/Linux/XDisplay.h"
-#endif
 
 namespace ssdk::ctls
 {
@@ -71,33 +66,18 @@ namespace ssdk::ctls
     //----------------------------------------------------------------------------------------------
     class MouseController : public ControllerBase
     {
+    protected:
+        MouseController(ControllerManagerPtr pControllerManager);
+
     public:
-#if defined(_WIN32)
-        MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter, ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, amf_handle hWnd, bool useRelativeInput);
-#else
-        MouseController(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter, ssdk::video::VideoReceiverPipeline::Ptr pVideoPipeline, Display* dpy, amf_handle hWnd, bool useRelativeInput);
-#endif
         virtual ~MouseController();
 
         // Input interface;
         virtual CTRL_DEVICE_TYPE AMF_STD_CALL GetType() const override { return CTRL_DEVICE_TYPE::MOUSE; }
         virtual AMF_RESULT  AMF_STD_CALL Update() override;
 
-        // ControllerBase interface
-        virtual AMF_RESULT  AMF_STD_CALL ProcessMessage(const WindowMessage& msg) override;
-        virtual void        AMF_STD_CALL ProcessInputEvent(const char* eventID, const amf::AMFVariant& event) override;
-        virtual void        AMF_STD_CALL OnConnectionEstablished() override;
-        virtual void        AMF_STD_CALL OnConnectionTerminated() override;
-
     protected:
-        void UpdateFromServer();
-#if defined(_WIN32)
-        void InitRawInput();
-        AMF_RESULT  UpdateFromInternalInput(LPARAM lParam);
-#else
-        void Init();
-        AMF_RESULT  UpdateFromInternalInput(const WindowMessage& msg);
-#endif
+        virtual void UpdateFromServer() = 0;
 
         void CalculateMousePos(AMFFloatPoint2D& mousePos, AMFRect rcViewport, AMFSize frameSize) const noexcept;
 
@@ -113,17 +93,8 @@ namespace ssdk::ctls
             DEVICE_KEYBOARD_INDEX = 5,
         };
 
-        amf_handle                              m_hWnd;
         WindowPoint                             m_LastMousePoint{0,0};
-        amf::AMFCriticalSection                 m_Sect;
+        mutable amf::AMFCriticalSection         m_Sect;
         AMFByteArray                            m_Data;
-        bool                                    m_bRelativePos;
-        bool                                    m_bRawInputInitialized;
-        VideoPresenterPtr                       m_pVideoPresenter;
-        ssdk::video::VideoReceiverPipeline::Ptr m_pVideoPipeline;
-#if defined(__linux)
-        XDisplay::Ptr                           m_dpy;
-        bool                                    m_bWayland{false};
-#endif
     };
 }// namespace ssdk::ctls

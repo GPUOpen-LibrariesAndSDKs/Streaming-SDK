@@ -33,14 +33,20 @@
 
 #if defined(__linux)
 
-#include "../MouseController.h"
+#include "MouseControllerLnx.h"
 #include "../ControllerManager.h"
 
 namespace ssdk::ctls
 {
     static constexpr const wchar_t* const AMF_FACILITY = L"MouseControllerLnx";
-    //-------------------------------------------------------------------------------------------------
-    void MouseController::Init()
+    MouseControllerLnx::MouseControllerLnx(ControllerManagerPtr pControllerManager, VideoPresenterPtr pVideoPresenter,
+                                     ssdk::video::VideoReceiverPipelinePC::Ptr pVideoPipeline, Display* dpy, amf_handle hWnd, bool useRelativeInput) :
+        MouseController(pControllerManager),
+        m_dpy(new XDisplay(dpy)),
+        m_pVideoPresenter(pVideoPresenter),
+        m_pVideoPipeline(pVideoPipeline),
+        m_hWnd(hWnd),
+        m_bRelativePos(useRelativeInput)
     {
         // Check for WAYLAND_DISPLAY environment variable
         const char* wayland_display = std::getenv("WAYLAND_DISPLAY");
@@ -57,7 +63,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    void MouseController::UpdateFromServer()
+    void MouseControllerLnx::UpdateFromServer()
     {
         Window focusedWindow;
         int revert_to;
@@ -97,7 +103,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT MouseController::UpdateFromInternalInput(const WindowMessage& msg)
+    AMF_RESULT MouseControllerLnx::UpdateFromInternalInput(const WindowMessage& msg)
     {
         amf::AMFLock lock(&m_Sect);
         const XIRawEvent* rawEvent = (const XIRawEvent*)msg.xcookie.data;
@@ -142,7 +148,7 @@ namespace ssdk::ctls
         {
             if (m_pControllerManager != nullptr)
             {
-                m_pControllerManager->SendControllerEvent(m_EventIDs[DEVICE_MOUSE_POS_INDEX].c_str(), &ev);
+                m_pControllerManager->SendControllerEvent(m_EventIDs[DEVICE_MOUSE_POS_INDEX].c_str(), ev);
                 //AMFTraceInfo(AMF_FACILITY, L"MouseController: SendControllerEvent ev.value.XY(%5.4f,%5.4f)", ev.value.floatPoint2DValue.x, ev.value.floatPoint2DValue.y);
             }
 
@@ -154,7 +160,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT MouseController::ProcessMessage(const WindowMessage& msg)
+    AMF_RESULT MouseControllerLnx::ProcessMessage(const WindowMessage& msg)
     {
         if (msg.type == ButtonPress || msg.type == ButtonRelease)
         {
@@ -187,7 +193,7 @@ namespace ssdk::ctls
             {
                 if (m_pControllerManager != nullptr)
                 {
-                    m_pControllerManager->SendControllerEvent(id.c_str(), &ev);
+                    m_pControllerManager->SendControllerEvent(id.c_str(), ev);
                 }
             }
         }
@@ -219,10 +225,49 @@ namespace ssdk::ctls
             std::string id = m_EventIDs[DEVICE_MOUSE_POS_INDEX];
             if (m_pControllerManager != nullptr)
             {
-                m_pControllerManager->SendControllerEvent(id.c_str(), &ev);
+                m_pControllerManager->SendControllerEvent(id.c_str(), ev);
             }
         }
         return AMF_OK;
     }
+
+    //-------------------------------------------------------------------------------------------------
+    void MouseControllerLnx::ProcessInputEvent(const char* eventID, const amf::AMFVariant& event)
+    {
+        // If Input Event is Mouse Move (from Server)
+        if (strcmp(eventID, DEVICE_MOUSE_POS) == 0)
+        {
+            // Get mouse position, normalize and set to mouse controller
+            if (event.type == amf::AMF_VARIANT_FLOAT_POINT2D)
+            {
+                // Get position in range [0, 1]
+                AMFFloatPoint2D mousePos = event.floatPoint2DValue;
+
+                // Denormalize mouse position according to client screen
+                bool bFullScreen = true;
+                if (m_pVideoPresenter != nullptr)
+                {
+                    AMFRect rcViewport{ 0, 0, m_pVideoPresenter->GetFrameWidth() - 1, m_pVideoPresenter->GetFrameHeight() - 1 };
+                    if (m_pVideoPipeline != nullptr)
+                    {
+                        rcViewport = m_pVideoPipeline->GetStreamViewport();
+                    }
+
+                    CalculateMousePos(mousePos, rcViewport, AMFConstructSize(m_pVideoPresenter->GetFrameWidth() - 1, m_pVideoPresenter->GetFrameHeight() - 1));
+                    bFullScreen = m_pVideoPresenter->GetFullScreen();
+                }
+
+                // Set mouse position
+                MouseControllerConfigPtr pMouseConfig = GetMouseConfig();
+                if (pMouseConfig != nullptr)
+                {
+                    pMouseConfig->SetMousePosition(mousePos);
+                    pMouseConfig->SetFullScreen(bFullScreen);
+                }
+            }
+        }
+    }
+
+
 }// namespace ssdk::ctls
 #endif

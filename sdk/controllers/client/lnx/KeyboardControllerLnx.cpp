@@ -32,7 +32,7 @@
 //
 
 #if defined(__linux)
-#include "../KeyboardController.h"
+#include "KeyboardControllerLnx.h"
 #include "../ControllerManager.h"
 #include "controllers/tbls/WindowsToX11KeyTable.h"
 #include "controllers/tbls/X11ToWindowsScanCodeTable.h"
@@ -41,8 +41,13 @@ namespace ssdk::ctls
 {
     static constexpr const wchar_t* const AMF_FACILITY = L"KeyboardController";
 
+    KeyboardControllerLnx::KeyboardControllerLnx(ControllerManagerPtr pControllerManager) :
+        KeyboardController(pControllerManager)
+    {
+    }
+
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT KeyboardController::ProcessMessage(const WindowMessage& msg)
+    AMF_RESULT KeyboardControllerLnx::ProcessMessage(const WindowMessage& msg)
     {
         AMF_RESULT result = AMF_FAIL;
         if (msg.type == KeyPress || msg.type == KeyRelease)
@@ -112,7 +117,7 @@ namespace ssdk::ctls
             {
                 if (m_pControllerManager != nullptr)
                 {
-                    m_pControllerManager->SendControllerEvent(id.c_str(), &ev);
+                    m_pControllerManager->SendControllerEvent(id.c_str(), ev);
                 }
             }
             else
@@ -125,7 +130,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    void KeyboardController::ReleaseModifiers()
+    void KeyboardControllerLnx::ReleaseModifiers()
     {
         std::vector<int> modifierKeys{ XK_Shift_L, XK_Shift_R, XK_Control_L, XK_Control_R, XK_Alt_L, XK_Alt_R };
         for (auto& keySym : modifierKeys)
@@ -168,7 +173,7 @@ namespace ssdk::ctls
             {
                 if (m_pControllerManager != nullptr)
                 {
-                    m_pControllerManager->SendControllerEvent(id.c_str(), &ev);
+                    m_pControllerManager->SendControllerEvent(id.c_str(), ev);
                 }
             }
         }

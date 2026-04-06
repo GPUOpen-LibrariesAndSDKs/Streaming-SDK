@@ -67,10 +67,10 @@ namespace ssdk::video
 
     public:
         MonoscopicVideoInput(amf::AMFContext* context, Consumer& sink, size_t hwInstance = 0);
-        ~MonoscopicVideoInput();
+        virtual ~MonoscopicVideoInput();
 
-        AMF_RESULT Init(const char* codecName, const AMFSize& resolution, uint32_t bitDepth, float frameRate, amf::AMFBuffer* initBlock);
-        AMF_RESULT Terminate();
+        virtual AMF_RESULT Init(const char* codecName, const AMFSize& resolution, uint32_t bitDepth, float frameRate, amf::AMFBuffer* initBlock);
+        virtual AMF_RESULT Terminate();
 
         bool IsCodecSupported(const char* codecName) const;
 
@@ -84,11 +84,15 @@ namespace ssdk::video
 
         AMF_RESULT SubmitInput(amf::AMFBuffer* input, transport_common::VideoFrame::SubframeType frameType, bool discontinuity);
 
+        AMF_RESULT SetProperty(const wchar_t* name, amf::AMFVariantStruct value);
+
+    protected:
+        virtual AMF_RESULT CreateDecoder(const char* codecName, VideoDecodeEngine::Ptr& decoder) const;
+        virtual AMF_RESULT OnDecoderPreinit();
     private:
-        AMF_RESULT CreateDecoder(const char* codecName, VideoDecodeEngine::Ptr& decoder) const;
         void PumpFrames();
 
-    private:
+    protected:
         struct FrameDescriptor
         {
             typedef std::deque<FrameDescriptor> Queue;
@@ -108,7 +112,7 @@ namespace ssdk::video
             MonoscopicVideoInput&       m_VideoInput;
         };
 
-    private:
+    protected:
         mutable amf::AMFCriticalSection m_Guard;
         amf::AMFContextPtr              m_Context;
         Consumer&                       m_Sink;

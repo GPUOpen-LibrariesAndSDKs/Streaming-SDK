@@ -35,6 +35,7 @@
 #include "AudioCodecs.h"
 #include "decoders/AudioDecoderAAC.h"
 #include "decoders/AudioDecoderOPUS.h"
+#include "decoders/AudioDecoderPCM.h"
 #include "amf/public/common/TraceAdapter.h"
 
 #include <sstream>
@@ -71,10 +72,10 @@ namespace ssdk::audio
             }
             else
             {
-                m_Format = format;
-                m_Channels = channels;
-                m_Layout = layout;
-                m_SamplingRate = samplingRate;
+                m_Format = m_Decoder->GetFormat();
+                m_Channels = m_Decoder->GetChannels();
+                m_Layout = m_Decoder->GetLayout();
+                m_SamplingRate = m_Decoder->GetSamplingRate();
                 m_Pump.Start();
             }
         }
@@ -85,9 +86,10 @@ namespace ssdk::audio
     {
         AMF_RESULT result = AMF_OK;
         std::string codecNameStr(codecName);
-        std::stringstream aacNum, opusNum;
+        std::stringstream aacNum, opusNum, pcmNum;
         aacNum << CODEC_AAC_FFMPEG_ID;
         opusNum << CODEC_OPUS_FFMPEG_ID;
+        pcmNum << CODEC_PCM_FFMPEG_ID;
 
         if (codecNameStr == CODEC_AAC || codecNameStr == aacNum.str())
         {
@@ -96,6 +98,10 @@ namespace ssdk::audio
         else if (codecNameStr == CODEC_OPUS || codecNameStr == opusNum.str())
         {
             decoder = AudioDecodeEngine::Ptr(new AudioDecoderOPUS(context));
+        }
+        else if (codecNameStr == CODEC_PCM || codecNameStr == pcmNum.str())
+        {
+            decoder = AudioDecodeEngine::Ptr(new AudioDecoderPCM(context));
         }
         else
         {
@@ -137,7 +143,14 @@ namespace ssdk::audio
     amf::AMF_AUDIO_FORMAT AudioInput::GetOutputFormat() const noexcept
     {
         amf::AMFLock m_Lock(&m_Guard);
-        return m_Format;
+        if (m_Decoder != nullptr)
+        {
+            return m_Decoder->GetFormat();
+        }
+        else
+        {
+            return amf::AMF_AUDIO_FORMAT::AMFAF_UNKNOWN;
+        }
     }
 
     uint32_t AudioInput::GetChannels() const noexcept
@@ -163,7 +176,7 @@ namespace ssdk::audio
         AMF_RESULT result = AMF_OK;
 
         amf::AMFLock m_Lock(&m_Guard);
-        AMF_RETURN_IF_FALSE(m_Decoder != nullptr, AMF_NOT_INITIALIZED, L"Audio decoder has not be instantiated");
+        AMF_RETURN_IF_FALSE(m_Decoder != nullptr, AMF_NOT_INITIALIZED, L"Audio decoder has not been instantiated");
         AMF_RETURN_IF_FALSE(input != nullptr, AMF_INVALID_ARG, L"MonoscopicVideoInput::SubmitInput(): Video input cannot be NULL");
         amf::AMFLock m_LockInput(&m_InputGuard);
         if (m_InputQueue.size() < MAX_INPUT_QUEUE_DEPTH)

@@ -78,6 +78,7 @@ namespace ssdk::ctls
 
     void ControllerManager::TerminateControllers()
     {
+        ReleaseModifiers();
         Stop();
         m_Controllers.clear();
         m_pCursor = nullptr;
@@ -96,9 +97,8 @@ namespace ssdk::ctls
         amf::AMFLock lock(&m_Guard);
         m_pCursor = pCursor;
     }
-
-    //-------------------------------------------------------------------------------------------------
-    bool ControllerManager::ProcessMessage(WindowMessage msg)
+//-------------------------------------------------------------------------------------------------
+    bool ControllerManager::ProcessMessage(const WindowMessage& msg)
     {
         bool result = false;
         for (const ControllerBase::Ptr& pController : m_Controllers)
@@ -121,7 +121,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-#if !defined(_WIN32)
+    #if !defined(__ANDROID__) && defined(__linux)
     bool ControllerManager::ProcessMessage(ExtWindowMessage msg)
     {
         bool result = false;
@@ -137,11 +137,12 @@ namespace ssdk::ctls
         }
         return result;
     }
-#endif
+    #endif
 
     //-------------------------------------------------------------------------------------------------
     void ControllerManager::ReleaseModifiers()
     {
+        amf::AMFLock lock(&m_Guard);
         for (const ControllerBase::Ptr& pController : m_Controllers)
         {
             if (pController != nullptr)
@@ -152,11 +153,10 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    void ControllerManager::SendControllerEvent(const char* id, const ssdk::ctls::CtlEvent* pEvent)
+    void ControllerManager::SendControllerEvent(const char* id, const ssdk::ctls::CtlEvent& event)
     {
         if (m_pClientTransport != nullptr && m_bConnectionEstablished)
         {
-            const amf::AMFVariant event((pEvent != nullptr) ? pEvent->value : amf::AMFVariant());
             m_pClientTransport->SendControllerEvent(id, event);
         }
     }
@@ -258,7 +258,7 @@ namespace ssdk::ctls
         AMFTraceInfo(AMF_FACILITY, L"SensorsThread started");
         if (nullptr == m_pManager)
         {
-            AMFTraceInfo(AMF_FACILITY, L"SensorsThread stopped prematurely becase controller manager is missing");
+            AMFTraceInfo(AMF_FACILITY, L"SensorsThread stopped prematurely because controller manager is missing");
             return;
         }
 

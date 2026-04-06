@@ -36,7 +36,7 @@ THE SOFTWARE.
 #include "MouseControllerSvr.h"
 #include "ControllerManagerSvr.h"
 #include "transports/transport-amd/messages/video/Cursor.h"
-//#include "amf/amf/public/common/TraceAdapter.h"
+#include "amf/amf/public/common/TraceAdapter.h"
 
 namespace ssdk::ctls::svr
 {

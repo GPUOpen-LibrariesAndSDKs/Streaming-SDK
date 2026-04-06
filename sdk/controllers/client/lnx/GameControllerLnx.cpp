@@ -131,7 +131,7 @@ namespace ssdk::ctls
     }
 
     //-------------------------------------------------------------------------------------------------
-    void AMF_STD_CALL GameController::FireEvent(const char* id, CtlEvent* ev)
+    void AMF_STD_CALL GameController::FireEvent(const char* id, const CtlEvent& ev)
     {
         if (m_pControllerManager != nullptr)
         {
@@ -151,7 +151,7 @@ namespace ssdk::ctls
         amf::AMFLock lock(&m_Guard);
 
         struct input_event event;
-        DEVICE_STATE state = m_State;
+        ControlState state = m_State;
         amf_int eventResult = 0;
 
         while ((eventResult = libevdev_next_event(m_device, LIBEVDEV_READ_FLAG_NORMAL, &event)) == LIBEVDEV_READ_STATUS_SUCCESS)
@@ -169,7 +169,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_JOYSTICK_LEFT_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_THUMBR:
@@ -178,7 +178,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_JOYSTICK_RIGHT_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_MODE:
@@ -187,7 +187,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_MODE_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_START:
@@ -196,7 +196,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_SYSTEM_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_SELECT:
@@ -205,7 +205,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_APPMENU_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_TL:
@@ -214,7 +214,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_GRIP_LEFT_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_TR:
@@ -223,7 +223,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_GRIP_RIGHT_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_A:
@@ -232,7 +232,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_A_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_B:
@@ -241,7 +241,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_B_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_X:
@@ -250,7 +250,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_X_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case BTN_Y:
@@ -259,7 +259,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_Y_CLICK;
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 default:
@@ -276,7 +276,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_TRIGGER_RIGHT_VALUE;
                     ev.value.type = amf::AMF_VARIANT_FLOAT;
                     ev.value.floatValue = event.value / 255.f;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case ABS_BRAKE:
@@ -285,7 +285,7 @@ namespace ssdk::ctls
                     id += DEVICE_CTRL_TRIGGER_LEFT_VALUE;
                     ev.value.type = amf::AMF_VARIANT_FLOAT;
                     ev.value.floatValue = event.value / 255.f;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     break;
                 }
                 case ABS_X:
@@ -295,7 +295,7 @@ namespace ssdk::ctls
                     ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
                     ev.value.floatPoint2DValue.x = (event.value - m_xAxisShift) / 32767.f;
                     ev.value.floatPoint2DValue.y = (m_yAxisShift - m_State.absY) / 32767.f;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     state.absX = event.value;
                     state.updated = true;
                     break;
@@ -307,7 +307,7 @@ namespace ssdk::ctls
                     ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
                     ev.value.floatPoint2DValue.x = (m_State.absX - m_xAxisShift) / 32767.f;
                     ev.value.floatPoint2DValue.y = (m_yAxisShift - event.value) / 32767.f;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     state.absY = event.value;
                     state.updated = true;
                     break;
@@ -319,7 +319,7 @@ namespace ssdk::ctls
                     ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
                     ev.value.floatPoint2DValue.x = (event.value - m_xAxisShift) / 32767.f;
                     ev.value.floatPoint2DValue.y = (m_yAxisShift - m_State.absRZ) / 32767.f;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     state.absZ = event.value;
                     state.updated = true;
                     break;
@@ -331,7 +331,7 @@ namespace ssdk::ctls
                     ev.value.type = amf::AMF_VARIANT_FLOAT_POINT2D;
                     ev.value.floatPoint2DValue.x = (m_State.absZ - m_xAxisShift) / 32767.f;
                     ev.value.floatPoint2DValue.y = (m_yAxisShift - event.value) / 32767.f;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     state.absRZ = event.value;
                     state.updated = true;
                     break;
@@ -361,7 +361,7 @@ namespace ssdk::ctls
 
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     state.hat0x = event.value;
                     state.updated = true;
                     break;
@@ -390,7 +390,7 @@ namespace ssdk::ctls
                     }
                     ev.value.type = amf::AMF_VARIANT_BOOL;
                     ev.value.boolValue = event.value != 0;
-                    FireEvent(id.c_str(), &ev);
+                    FireEvent(id.c_str(), ev);
                     state.hat0y = event.value;
                     state.updated = true;
                     break;

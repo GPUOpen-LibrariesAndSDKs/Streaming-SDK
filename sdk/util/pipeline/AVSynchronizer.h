@@ -101,6 +101,8 @@ namespace ssdk::util
         AMF_RESULT FlushVideo();
         AMF_RESULT FlushAudio();
 
+        void UpdateStats(amf::AMFSurface* input);
+
     protected:
         mutable amf::AMFCriticalSection     m_Guard;
         VideoInput::Ptr     m_VideoInput;
@@ -115,5 +117,10 @@ namespace ssdk::util
         bool                m_ResetAVSync = false;
         amf_pts             m_DesyncToIgnore = 0;
         std::deque<amf_pts> m_AverageAVDesyncQueue;
+
+        bool                m_FirstVideoFrame = true;
+        amf_pts             m_FirstVideoPts = 0;
+        bool                m_FirstAudioPacket = true;
+        amf_pts             m_FirstAudioPts = 0;
     };
 }

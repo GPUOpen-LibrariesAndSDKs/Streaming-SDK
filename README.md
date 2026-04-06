@@ -4,12 +4,16 @@ Advanced Interactive Streaming SDK is a C++ library that provides building block
 Virtual and Augmented Reality, etc. using AMD Radeon graphics. It allows you to build a complete streaming solution including video and audio capture, video and audio encoder/decoder/pre-post-processing pipelines, a robust and secure network stack, or use some of its components, while implementing the rest yourself.
 
 ## Changelog:
-- v1.1.1 - bug fixes:
-	- Allowing the server to start without audio when no audio output device is available on the server
-	- Code clean-up
+- v1.2.0 - multiple new features and improvements:
+    - added support for Android client (Android 12/ API 31 required for full functionality). IMPORTANT: paths to the output directories have changed to accommodate builds for multiple OSs. Please update paths in your launch.json file accordingly:
+		- Windows: `$(workspaceFolder)/bin/Windows`
+		- Linux: `$(workspaceFolder)/bin/Linux`
+		- Android: `$(workspaceFolder)/bin/Android`
+	- added support for uncompressed audio streaming
+	- multiple stability improvements and bug fixes
 - v1.1.0 - added support for Linux:
-	- Server supported on AMD graphics with the Pro driver (X.org required)
-	- Client supported on AMD graphics with the Pro and RADV drivers, NVidia graphics (proprietary driver recommended), Intel graphics (X.org recommended, Wayland supported with some limitations)
+	- Server supported on AMD graphics
+	- Client supported on AMD graphics, NVidia graphics (proprietary driver recommended), Intel graphics (X.org recommended, Wayland supported with some limitations)
 	- Tested with Ubuntu 22.04 LTS and 24.04 LTS
 - v1.0.2 - bug fixes:
 	- Encoder frame rate wasn't being set correctly when display capture mode was set to *present* or when QoS was turned off

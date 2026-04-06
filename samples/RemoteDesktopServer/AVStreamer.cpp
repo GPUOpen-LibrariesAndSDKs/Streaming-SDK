@@ -36,7 +36,7 @@
 #include "amf/public/common/TraceAdapter.h"
 #include "amf/public/include/components/DisplayCapture.h"
 
-static constexpr const wchar_t* const AMF_FACILITY = L"AVStreamer";
+#define AMF_FACILITY L"AVStreamer"
 
 AVStreamer::AVStreamer() :
     m_VideoCaptureThread(*this),
@@ -99,6 +99,7 @@ void AVStreamer::OnSessionDisconnected(ssdk::transport_common::SessionHandle ses
     }
     StopVideoCaptureIfNecessary();
     StopAudioCaptureIfNecessary();
+    AMFTraceInfo(AMF_FACILITY, L"Session %lld disconnected from AVStreamer", session);
 }
 
 
@@ -622,12 +623,14 @@ void AVStreamer::CaptureVideo()
             {
                 if (plane->GetWidth() == streamResolution.width && plane->GetHeight() == streamResolution.height && duplicate == false)
                 {
+                    m_VideoCapture->Terminate();
                     capturedData = nullptr;
                     m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, true);
                     m_VideoCapture->ReInit(0, 0);
                 }
                 else if ((plane->GetWidth() != streamResolution.width || plane->GetHeight() != streamResolution.height) && duplicate == true)
                 {
+                    m_VideoCapture->Terminate();
                     capturedData = nullptr;
                     m_VideoCapture->SetProperty(AMF_DISPLAYCAPTURE_DUPLICATEOUTPUT, false);
                     m_VideoCapture->ReInit(0, 0);

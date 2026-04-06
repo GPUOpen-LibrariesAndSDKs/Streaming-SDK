@@ -149,17 +149,12 @@ namespace ssdk::transport_amd
         class TurnaroundLatencyThread : public amf::AMFThread
         {
         public:
-            TurnaroundLatencyThread() {};
-            void Init(ClientTransportImpl* pTransport, amf_uint period, StreamID streamID)
-            {
-                m_LastPts = amf_high_precision_clock();
-                m_pTransport = pTransport;
-                m_Period = period;
-                m_StreamID = streamID;
-            }
+            TurnaroundLatencyThread() = default;
+
+            void Init(ClientTransportImpl* pTransport, amf_uint period, StreamID streamID);
             //void Deinit();
-            void SetLastPts(amf_pts pts) { amf::AMFLock lock(&m_Guard);  m_LastPts = pts; };
-            void SetPeriod(amf_uint period) { amf::AMFLock lock(&m_Guard); m_Period = period; };
+            void SetLastPts(amf_pts pts);
+            void SetPeriod(amf_uint period);
 
             virtual void Run();
 
@@ -175,8 +170,8 @@ namespace ssdk::transport_amd
         typedef std::unique_ptr<char[]> SendData;
 
     public:
-        ClientTransportImpl() {};
-        virtual ~ClientTransportImpl() {};
+        ClientTransportImpl() = default;
+        virtual ~ClientTransportImpl();
 
         //	ClientTransport methods:
         virtual Result Start(const ClientInitParameters& params) override;
@@ -199,7 +194,7 @@ namespace ssdk::transport_amd
         virtual Result SendAudioInit(const char* codec, StreamID StreamID, InitID initID, amf::AMF_AUDIO_FORMAT format, uint32_t channels, uint32_t layout, uint32_t samplingRate, const void* initBlock, size_t initBlockSize) override;
         virtual Result SendAudioBuffer(StreamID StreamID, const TransmittableAudioBuffer& transmittableBuf) override;
 
-        virtual Result SendControllerEvent(const char* controlID, const amf::AMFVariant& event) override;
+        virtual Result SendControllerEvent(const char* controlID, const ssdk::ctls::CtlEvent& event) override;
         virtual Result SendTrackableDevicePose(const char* deviceID, const Pose& pose) override;
 
         virtual Result SendDeviceConnected(const char* deviceID, ssdk::ctls::CTRL_DEVICE_TYPE eType, const char* description) override;
@@ -217,7 +212,7 @@ namespace ssdk::transport_amd
         // own methods
         void SetStatsManager(ssdk::util::ClientStatsManager::Ptr statsManager);
     protected:
-        
+
         Result SendMessageWithData(Channel channel, Message* message, const void* data, size_t dataSize);
         void ProcessMessage(Session* session, Channel channel, int msgID, const void* msg, size_t messageSize);
         void OnServiceMessage(Session* session, const void* msg, size_t messageSize);
@@ -262,7 +257,7 @@ namespace ssdk::transport_amd
             uint64_t m_lastFrameNumbers = 0;
             amf_pts m_LastIDRRequestTime = 0;
             bool m_IDRRequestSent = false;
-            
+
         };
         typedef std::map<StreamID, FrameLossInfo> FrameLossInfoMap;
         FrameLossInfoMap m_FrameLossInfoMap;

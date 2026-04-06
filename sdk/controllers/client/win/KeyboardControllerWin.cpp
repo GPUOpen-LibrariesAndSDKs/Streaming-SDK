@@ -22,7 +22,7 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, Express OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -32,13 +32,18 @@
 //
 #if defined(_WIN32)
 
-#include "../KeyboardController.h"
+#include "KeyboardControllerWin.h"
 #include "../ControllerManager.h"
 
 namespace ssdk::ctls
 {
+    KeyboardControllerWin::KeyboardControllerWin(ControllerManagerPtr pControllerManager) :
+        KeyboardController(pControllerManager)
+    {
+    }
+
     //-------------------------------------------------------------------------------------------------
-    AMF_RESULT KeyboardController::ProcessMessage(const WindowMessage& msg)
+    AMF_RESULT KeyboardControllerWin::ProcessMessage(const WindowMessage& msg)
     {
         AMF_RESULT result = AMF_FAIL;
         if (msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST)
@@ -76,7 +81,7 @@ namespace ssdk::ctls
             {
                 if (m_pControllerManager != nullptr)
                 {
-                    m_pControllerManager->SendControllerEvent(id.c_str(), &ev);
+                    m_pControllerManager->SendControllerEvent(id.c_str(), ev);
                 }
 
                 result = AMF_OK;
@@ -85,12 +90,5 @@ namespace ssdk::ctls
 
         return result;
     }
-
-    //-------------------------------------------------------------------------------------------------
-    void KeyboardController::ReleaseModifiers()
-    {
-        
-    }
-    
 }// namespace ssdk::ctls
 #endif

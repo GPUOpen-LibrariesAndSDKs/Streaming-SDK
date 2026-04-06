@@ -78,6 +78,26 @@ namespace ssdk::transport_amd
 
     static constexpr const wchar_t* ID_SESSION_ID = L"ANS_SessionID";
 
+    void ClientTransportImpl::TurnaroundLatencyThread::Init(ClientTransportImpl* pTransport, amf_uint period, StreamID streamID)
+    {
+        m_LastPts = amf_high_precision_clock();
+        m_pTransport = pTransport;
+        m_Period = period;
+        m_StreamID = streamID;
+    }
+    //void Deinit();
+    void ClientTransportImpl::TurnaroundLatencyThread::SetLastPts(amf_pts pts)
+    {
+        amf::AMFLock lock(&m_Guard);
+        m_LastPts = pts;
+    }
+
+    void ClientTransportImpl::TurnaroundLatencyThread::SetPeriod(amf_uint period)
+    {
+        amf::AMFLock lock(&m_Guard);
+        m_Period = period;
+    }
+
     void ClientTransportImpl::TurnaroundLatencyThread::Run()
     {
         AMFTraceInfo(AMF_FACILITY, L"TurnaroundLatencyThread started");
@@ -93,11 +113,12 @@ namespace ssdk::transport_amd
             // m_LastPts and m_Period may be updated while thread sleeps
             amf_pts lastPts;
             amf_pts period;
-
+            ClientTransportImpl* transport = nullptr;
             {
                 amf::AMFLock lock(&m_Guard);
                 lastPts = m_LastPts;
                 period = m_Period;
+                transport = m_pTransport;
             }
 
             amf_pts elapsedMS = static_cast<amf_ulong>((amf_high_precision_clock() - lastPts) / 10000);
@@ -128,12 +149,21 @@ namespace ssdk::transport_amd
             }
             deviceEvent.Prepare();
 
-            m_pTransport->SendMsg(Channel::SENSORS_IN, deviceEvent.GetSendData(), deviceEvent.GetSendSize());
+            if (transport != nullptr)
+            {
+                transport->SendMsg(Channel::SENSORS_IN, deviceEvent.GetSendData(), deviceEvent.GetSendSize());
+            }
         }
 
         m_pTransport = nullptr;
 
         AMFTraceInfo(AMF_FACILITY, L"TurnaroundLatencyThread terminated");
+    }
+
+    ClientTransportImpl::~ClientTransportImpl()
+    {
+        m_TurnaroundLatencyThread.RequestStop();
+        m_TurnaroundLatencyThread.WaitForStop();
     }
 
     Result ClientTransportImpl::Start(const ClientInitParameters& params)
@@ -521,10 +551,10 @@ namespace ssdk::transport_amd
     }
 
     //  Controllers:
-    Result ClientTransportImpl::SendControllerEvent(const char* controlID, const amf::AMFVariant& event)
+    Result ClientTransportImpl::SendControllerEvent(const char* controlID, const ssdk::ctls::CtlEvent& event)
     {
         DeviceEvent devEvent;
-        devEvent.AddValue(controlID, event, 0);
+        devEvent.AddValue(controlID, event.value, event.flags, amf_high_precision_clock());
         devEvent.Prepare();
 
         return SendMsg(Channel::SENSORS_IN, devEvent.GetSendData(), devEvent.GetSendSize());
@@ -591,9 +621,9 @@ namespace ssdk::transport_amd
     Result ClientTransportImpl::SendStats(StreamID streamID, const StatsSnapshot& statsSnapshot)
     {
         Result result = Result::FAIL;
-                        
+
         const ssdk::util::ClientStatsManager::StatsSnapshotImpl statsSnapshotImpl = dynamic_cast<const ssdk::util::ClientStatsManager::StatsSnapshotImpl&>(statsSnapshot);
-        Statistics statsMessage(streamID, 
+        Statistics statsMessage(streamID,
                                 statsSnapshotImpl.GetFullLatency(),
                                 statsSnapshotImpl.GetClientLatency(),
                                 statsSnapshotImpl.GetServerLatency(),
@@ -940,6 +970,7 @@ namespace ssdk::transport_amd
             size_t frameBlockOfs = strlen((char*)msg + 1) + 2;// skip opt code
             const void* frameBlock = static_cast<const amf_uint8*>(msg) + frameBlockOfs;
             transport_common::VideoFrame::SubframeType subFrameType = videoData.GetSubframeType();
+            frame.SetPts(videoData.GetPts());
             frame.RegisterSubframe(0, messageSize - frameBlockOfs, subFrameType);
             if (frame.ParseBuffer(frameBlock) != AMF_OK)
             {
@@ -979,7 +1010,7 @@ namespace ssdk::transport_amd
                             uint64_t lastFrameNumber = m_FrameLossInfoMap[streamID].m_lastFrameNumbers;
                             if (frameNumber == (lastFrameNumber + 1)) // check that frame arrived in order
                             {
-                                m_clientInitParameters.GetVideoReceiverCallback()->OnVideoFrame(streamID, frame); 
+                                m_clientInitParameters.GetVideoReceiverCallback()->OnVideoFrame(streamID, frame);
                                 frameProcessed = true;
                             }
                             else
@@ -1002,7 +1033,7 @@ namespace ssdk::transport_amd
             }
         }
     }
-    
+
     void ClientTransportImpl::OnVideoOutCursor(Session* /*session*/, const void* msg, size_t messageSize)
     {
         amf::AMFContextPtr pContext = nullptr;
@@ -1322,15 +1353,15 @@ namespace ssdk::transport_amd
     {
         Result result = Result::FAIL;
         amf_pts now = amf_high_precision_clock();
-        
+
         // if this is a first frame, m_FrameLossInfoMap[streamID] will return default LastFrameInfo object with m_LastIDRRequestTime = 0
         if (now - m_FrameLossInfoMap[streamID].m_LastIDRRequestTime > 0.5 * AMF_SECOND)
         {
             VideoForceUpdate videoForceUpdate(streamID);
             result = SendMsg(Channel::VIDEO_OUT, videoForceUpdate.GetSendData(), videoForceUpdate.GetSendSize());
             AMFTraceInfo(AMF_FACILITY, L"Lost %S, video frame detected for StreamID %llu, (received %llu, expected: %llu);  Sending VideoForceUpdate message;  Time since last VideoForceUpdate message = %5.2f seconds",
-                IDRframe ? "IDR" : "", streamID, frameNumber, m_FrameLossInfoMap[streamID].m_lastFrameNumbers, (float)(now - m_FrameLossInfoMap[streamID].m_LastIDRRequestTime) / (float)AMF_SECOND);
-            
+                IDRframe ? "IDR" : "P-frame", streamID, frameNumber, m_FrameLossInfoMap[streamID].m_lastFrameNumbers, (float)(now - m_FrameLossInfoMap[streamID].m_LastIDRRequestTime) / (float)AMF_SECOND);
+
             m_FrameLossInfoMap[streamID].m_LastIDRRequestTime = now;
             m_FrameLossInfoMap[streamID].m_IDRRequestSent = true;
         }

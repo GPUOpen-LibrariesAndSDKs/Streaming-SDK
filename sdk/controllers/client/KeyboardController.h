@@ -38,19 +38,13 @@ namespace ssdk::ctls
 {
     class KeyboardController : public ControllerBase
     {
-    public:
+    protected:
         KeyboardController(ControllerManagerPtr pControllerManager);
-        ~KeyboardController();
 
+    public:
         // Input interface;
         virtual CTRL_DEVICE_TYPE AMF_STD_CALL GetType() const override { return CTRL_DEVICE_TYPE::KEYBOARD; }
         virtual AMF_RESULT AMF_STD_CALL Update() override;
-
-        // ControllerBase interface
-        virtual AMF_RESULT  AMF_STD_CALL ProcessMessage(const WindowMessage& msg) override;
-        virtual void        AMF_STD_CALL OnConnectionEstablished() override;
-        virtual void        AMF_STD_CALL OnConnectionTerminated() override;
-        virtual void        AMF_STD_CALL ReleaseModifiers() override;
 
     protected:
         enum CONTROLLER_ID_INDEX_ENUM

@@ -33,6 +33,10 @@
 
 #include "AudioReceiverPipeline.h"
 
+#ifdef __ANDROID__
+#include "android/AudioPresenterAndroid.h"
+#endif
+
 #include "util/pipeline/SynchronousSlot.h"
 #include "util/pipeline/AsynchronousSlot.h"
 
@@ -67,6 +71,9 @@ namespace ssdk::audio
         amf::AMFLock    lock(&m_Guard);
         if (m_InitID != initID)
         {
+#ifdef __ANDROID__
+            format  = amf::AMFAF_S16;   // Android AAUdio-based presenter does not handle planar formats which Ffmpeg defaults to - forcing the decoder to output signed int16
+#endif
             if ((result = m_Input->Init(codec, format, channels, layout, samplingRate, initBlock)) != AMF_OK)
             {
                 AMFTraceError(AMF_FACILITY, L"Failed to initialize audio decoder, codec: %S, format: %d, channels: %u, layout: %u, sampling rate: %u", codec, format, channels, layout, samplingRate);
@@ -77,13 +84,19 @@ namespace ssdk::audio
                 {
                     m_AudioConverter->Terminate();
                 }
-                if (InitConverter() == AMF_OK)
+                if (InitConverter() == AMF_OK)  //  On Android InitConverter returns AMF_OK, but m_AudioConverter == nullptr as we configure the audio presenter to match
                 {
                     ssdk::util::AVSynchronizer::AudioInput::Ptr audioSink;
                     m_AVSynchronizer->GetAudioInput(audioSink); //  AV Syncronizer's video input terminates the pipeline and passes the frame to the presenter, for video it's just a passthrough
-                    ssdk::util::PipelineSlot::Ptr converterSlot = ssdk::util::PipelineSlot::Ptr(new ssdk::util::SynchronousSlot("AudioConverter", m_AudioConverter, audioSink));
-                    m_PipelineHead = converterSlot; //  We always have at least a VideoConverter component, continue to
-
+                    if (m_AudioConverter != nullptr)
+                    {
+                        ssdk::util::PipelineSlot::Ptr converterSlot = ssdk::util::PipelineSlot::Ptr(new ssdk::util::SynchronousSlot("AudioConverter", m_AudioConverter, audioSink));
+                        m_PipelineHead = converterSlot; //  On Windows and Linux we always have an audio converter
+                    }
+                    else
+                    {
+                        m_PipelineHead = audioSink;
+                    }
                     m_InitID = initID;
                     m_PipelineHead->Start();
                     AMFTraceInfo(AMF_FACILITY, L"Successfully initialized audio decoder for codec: %S, format: %d, channels: %u, layout: %u, sampling rate: %u", codec, format, channels, layout, samplingRate);
@@ -106,28 +119,20 @@ namespace ssdk::audio
 
     AMF_RESULT AudioReceiverPipeline::InitConverter()
     {
+        AMF_RESULT result = AMF_OK;
+
+        AMF_RETURN_IF_INVALID_POINTER(m_Presenter, L"Audio presenter has not been created");
+
+        uint32_t inputSamplingRate = m_Input->GetSamplingRate();
+        amf::AMF_AUDIO_FORMAT inputFormat = m_Input->GetOutputFormat();
+        uint32_t inputChannels = m_Input->GetChannels();
+        uint32_t inputLayout = m_Input->GetLayout();
+
+#ifndef __ANDROID__
         amf::AMFComponentPtr converter;
-        AMF_RESULT result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &converter);
+        result = g_AMFFactory.LoadExternalComponent(m_Context, FFMPEG_HELPER_DLL_NAME, "AMFCreateComponentInt", (void*)FFMPEG_AUDIO_CONVERTER, &converter);
         AMF_RETURN_IF_FAILED(result, L"LoadExternalComponent(%s) failed", FFMPEG_AUDIO_CONVERTER);
 
-        //  Configure converter input
-        uint32_t inputSamplingRate = m_Input->GetSamplingRate();
-        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, inputSamplingRate);
-        AMF_RETURN_IF_FAILED(result, L"Failed to set input sampling rate %d on audio converter, result = %s", inputSamplingRate, amf::AMFGetResultText(result));
-
-        amf::AMF_AUDIO_FORMAT inputFormat = m_Input->GetOutputFormat();
-        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, inputFormat);
-        AMF_RETURN_IF_FAILED(result, L"Failed to set input format %d on audio converter, result = %s", inputFormat, amf::AMFGetResultText(result));
-
-        uint32_t inputChannels = m_Input->GetChannels();
-        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, inputChannels);
-        AMF_RETURN_IF_FAILED(result, L"Failed to set input channels %d on audio converter, result = %s", inputChannels, amf::AMFGetResultText(result));
-
-        uint32_t inputLayout = m_Input->GetLayout();
-        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, inputLayout);
-        AMF_RETURN_IF_FAILED(result, L"Failed to set input channel layout %d on audio converter, result = %s", inputLayout, amf::AMFGetResultText(result));
-
-        //  Configure converter output
         int64_t streamBitRate;
         int64_t outputSamplingRate;
         int64_t outputChannels;
@@ -137,6 +142,19 @@ namespace ssdk::audio
 
         result = m_Presenter->GetDescription(streamBitRate, outputSamplingRate, outputChannels, outputFormat, outputLayout, outputBlockAlign);
         AMF_RETURN_IF_FAILED(result, L"Failed get parameters of the audio presenter, result = %s", amf::AMFGetResultText(result));
+
+        //  Configure converter input
+        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_RATE, inputSamplingRate);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input sampling rate %d on audio converter, result = %s", inputSamplingRate, amf::AMFGetResultText(result));
+
+        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_SAMPLE_FORMAT, inputFormat);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input format %d on audio converter, result = %s", inputFormat, amf::AMFGetResultText(result));
+
+        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNELS, inputChannels);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input channels %d on audio converter, result = %s", inputChannels, amf::AMFGetResultText(result));
+
+        result = converter->SetProperty(AUDIO_CONVERTER_IN_AUDIO_CHANNEL_LAYOUT, inputLayout);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input channel layout %d on audio converter, result = %s", inputLayout, amf::AMFGetResultText(result));
 
         result = converter->SetProperty(AUDIO_CONVERTER_OUT_AUDIO_SAMPLE_RATE, outputSamplingRate);
         AMF_RETURN_IF_FAILED(result, L"Failed to set output sampling rate %lld on audio converter, result = %s", outputSamplingRate, amf::AMFGetResultText(result));
@@ -157,12 +175,27 @@ namespace ssdk::audio
         AMF_RETURN_IF_FAILED(result, L"Failed to initialize audio converter, result = %s", amf::AMFGetResultText(result));
 
         m_AudioConverter = converter;
+#else   //  On Android configure the audio presenter to match the output of the stream
+        ssdk::audio::AudioPresenterAndroid::Ptr presenter = std::static_pointer_cast<ssdk::audio::AudioPresenterAndroid>(m_Presenter);
+        result = presenter->SetChannels(inputChannels);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input channels %d on audio presenter, result = %s", inputChannels, amf::AMFGetResultText(result));
+
+        result = presenter->SetLayout(inputLayout);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input channel layout %d on audio presenter, result = %s", inputLayout, amf::AMFGetResultText(result));
+
+        result = presenter->SetFormat(inputFormat);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input format %d on audio presenter, result = %s", inputFormat, amf::AMFGetResultText(result));
+
+        result = presenter->SetSampleRate(inputSamplingRate);
+        AMF_RETURN_IF_FAILED(result, L"Failed to set input sampling rate %d on audio presenter, result = %s", inputSamplingRate, amf::AMFGetResultText(result));
+        m_AudioConverter = nullptr;
+#endif
         return result;
     }
 
     void AudioReceiverPipeline::Terminate()
     {
-        AMFTraceDebug(AMF_FACILITY, L"AudioPipeline::Terminate()");
+        AMFTraceDebug(AMF_FACILITY, L"AudioPipeline::Terminate() started");
         ssdk::audio::AudioInput::Ptr audioInput;
         amf::AMFComponentPtr        audioConverter;
         {
@@ -181,6 +214,7 @@ namespace ssdk::audio
         {
             audioConverter->Terminate();
         }
+        AMFTraceDebug(AMF_FACILITY, L"AudioPipeline::Terminate() completed");
     }
 
     AMF_RESULT AudioReceiverPipeline::SubmitInput(amf::AMFBuffer* buffer, bool discontinuity)

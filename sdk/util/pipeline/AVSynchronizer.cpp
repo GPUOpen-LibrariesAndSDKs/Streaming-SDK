@@ -129,16 +129,28 @@ namespace ssdk::util
         AMF_RETURN_IF_FALSE(input != nullptr, AMF_INVALID_ARG, L"AVSynchronizer::SubmitVideoInput received NULL input");
         amf::AMFSurfacePtr surface(input);
         AMF_RETURN_IF_FALSE(surface != nullptr, AMF_INVALID_ARG, L"AVSynchronizer::SubmitVideoInput received input that is not an AMFSurface");
+        {
+            amf::AMFLock    lock(&m_Guard);
+            m_LastVideoPts = surface->GetPts() - m_FirstVideoPts;
+        }
+        if (m_FirstVideoFrame == true)
+        {
+            m_FirstVideoPts = surface->GetPts();
+            m_FirstVideoFrame = false;
+            AMFTraceDebug(AMF_FACILITY, L"First video frame pts=%lld", m_FirstVideoPts);
+        }
+        AMF_RESULT result = m_VideoPresenter != nullptr ? m_VideoPresenter->SubmitInput(surface) : AMF_OK;
+        UpdateStats(surface);
+        return result;
+    }
+
+    void AVSynchronizer::UpdateStats(amf::AMFSurface* surface)
+    {
         ssdk::util::ClientStatsManager::Ptr statsManager;
         {
             amf::AMFLock    lock(&m_Guard);
-            
             statsManager = m_StatsManager;
         }
-        m_LastVideoPts = surface->GetPts();
-
-        AMF_RESULT result = m_VideoPresenter != nullptr ? m_VideoPresenter->SubmitInput(surface) : AMF_OK;
-
         ssdk::transport_common::StreamID streamID = -1;
         surface->GetProperty(ssdk::video::STREAM_ID_PROPERTY, &streamID);
         if (streamID == -1)
@@ -178,12 +190,11 @@ namespace ssdk::util
             statsManager->UpdateFullLatencyAndFramerate(fullLatency);
             statsManager->SendStatistics();
         }
-
-        return result;
     }
 
     AMF_RESULT AVSynchronizer::FlushVideo()
     {
+        amf::AMFLock    lock(&m_Guard);
         return m_VideoPresenter != nullptr ? m_VideoPresenter->Flush() : AMF_OK;
     }
 
@@ -211,6 +222,13 @@ namespace ssdk::util
 
                 amf::AMFLock    lock(&m_Guard);
 
+                if (m_FirstAudioPacket == true)
+                {
+                    m_FirstAudioPts = audioBuffer->GetPts();
+                    AMFTraceDebug(AMF_FACILITY, L"First audio frame pts=%lld", m_FirstAudioPts);
+                    m_FirstAudioPacket = false;
+                }
+
                 if (m_ResetAVSync == true)
                 {
                     m_SequentiallyDroppedAudioSamplesCnt = 0;
@@ -221,7 +239,7 @@ namespace ssdk::util
                 if (m_LastVideoPts != -1LL)
                 {
                     //  Here we compensate for audio lagging behind video by more than a certain threshold
-                    m_AverageAVDesyncQueue.push_back(m_LastVideoPts - audioBuffer->GetPts());
+                    m_AverageAVDesyncQueue.push_back(m_LastVideoPts - audioBuffer->GetPts() - m_FirstAudioPts);
                     if (m_AverageAVDesyncQueue.size() > AVERAGING_SAMPLE_SIZE)
                     {
                         amf_pts averageAVDesync = 0;
@@ -232,7 +250,10 @@ namespace ssdk::util
                         }
                         // we need to cast to signed, because otherwise the division gets computed unsigned
                         averageAVDesync /= static_cast<amf_pts>(m_AverageAVDesyncQueue.size());
-                        m_StatsManager->UpdateAudioStatistics(averageAVDesync); // lock aquired above
+                        if (m_StatsManager != nullptr)
+                        {
+                            m_StatsManager->UpdateAudioStatistics(averageAVDesync); // lock aquired above
+                        }
                         if (averageAVDesync > MAX_AUDIO_LATE_BY + m_DesyncToIgnore)
                         {
                             if (++m_SequentiallyDroppedAudioSamplesCnt < MAX_SEQ_DROPPED_AUDIO_PACKETS)
@@ -265,6 +286,7 @@ namespace ssdk::util
 
     AMF_RESULT AVSynchronizer::FlushAudio()
     {
+        amf::AMFLock    lock(&m_Guard);
         return m_AudioPresenter != nullptr ? m_AudioPresenter->Flush() : AMF_OK;
     }
 

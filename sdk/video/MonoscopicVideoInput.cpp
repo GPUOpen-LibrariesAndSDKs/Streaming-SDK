@@ -55,6 +55,12 @@ namespace ssdk::video
         Terminate();
     }
 
+
+    AMF_RESULT MonoscopicVideoInput::OnDecoderPreinit()
+    {
+        return AMF_OK;
+    }
+
     AMF_RESULT MonoscopicVideoInput::Init(const char* codecName, const AMFSize& resolution, uint32_t bitDepth, float frameRate, amf::AMFBuffer* initBlock)
     {
         AMF_RESULT result = AMF_OK;
@@ -90,7 +96,7 @@ namespace ssdk::video
                 AMFTraceError(AMF_FACILITY, L"Bit depth %u is not supported by the video decoder for the %S codec", bitDepth, codecName);
                 break;
             }
-            if (result == AMF_OK)
+            if (result == AMF_OK && (result = OnDecoderPreinit()) == AMF_OK)
             {
                 result = m_Decoder->Init(decoderOutputFormat, resolution, frameRate, initBlock);
                 if (result != AMF_OK)
@@ -117,21 +123,24 @@ namespace ssdk::video
             m_Pump.RequestStop();
             m_Pump.WaitForStop();
         }
+        VideoDecodeEngine::Ptr decoder;
         {
             amf::AMFLock m_Lock(&m_Guard);
+            amf::AMFLock m_LockInput(&m_InputGuard);
+            m_InputFrameCnt = 0;
+            m_InputQueue.clear();
             if (m_Decoder != nullptr)
             {
-                m_Decoder->Terminate();
+                decoder = m_Decoder;
                 m_Decoder = nullptr;
             }
             m_OutputFormat = amf::AMF_SURFACE_UNKNOWN;
             m_Resolution = {};
             m_FrameRate = 0;
         }
+        if (decoder != nullptr)
         {
-            amf::AMFLock m_LockInput(&m_InputGuard);
-            m_InputFrameCnt = 0;
-            m_InputQueue.clear();
+            decoder->Terminate();
         }
         {
             amf::AMFLock m_LockOutput(&m_OutputGuard);
@@ -250,6 +259,16 @@ namespace ssdk::video
             result = AMF_INPUT_FULL;
         }
         return result;
+    }
+
+    AMF_RESULT MonoscopicVideoInput::SetProperty(const wchar_t* name, amf::AMFVariantStruct value)
+    {
+        VideoDecodeEngine::Ptr decoder;
+        {
+            amf::AMFLock m_Lock(&m_Guard);
+            decoder = m_Decoder;
+        }
+        return (decoder != nullptr) ? decoder->SetProperty(name, value) : AMF_FAIL;;
     }
 
     void MonoscopicVideoInput::PumpFrames()

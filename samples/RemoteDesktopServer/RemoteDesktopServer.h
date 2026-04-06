@@ -55,6 +55,7 @@
 
 #include <string>
 #include <memory>
+#include <set>
 
 extern const wchar_t* PARAM_NAME_MONITOR_ID;
 
@@ -133,6 +134,27 @@ protected:
     std::string GetSemaphoreFileName() const;
 
 protected:
+    class SessionClientBinding
+    {
+    public:
+        typedef std::set<SessionClientBinding>  Set;
+
+    public:
+        SessionClientBinding(ssdk::transport_common::SessionHandle handle, const char* clientID) : m_Session(handle), m_ClientID(clientID) {}
+
+        inline ssdk::transport_common::SessionHandle GetSessionHandle() const noexcept { return m_Session; }
+        inline const std::string& GetClientID() const noexcept { return m_ClientID; }
+
+        inline bool operator==(const SessionClientBinding& other) const noexcept { return m_ClientID == other.GetClientID(); }
+        inline bool operator!=(const SessionClientBinding& other) const noexcept { return !operator==(other); }
+        inline bool operator<(const SessionClientBinding& other) const noexcept { return m_ClientID < other.GetClientID(); }
+
+    private:
+        ssdk::transport_common::SessionHandle   m_Session;
+        std::string                             m_ClientID;
+    };
+
+protected:
     mutable amf::AMFCriticalSection                     m_Guard;
 
     bool                                                m_AMFInitalized = false;
@@ -143,8 +165,9 @@ protected:
     amf::AMFContextPtr                                  m_Context;
     amf::AMF_MEMORY_TYPE                                m_MemoryType = amf::AMF_MEMORY_TYPE::AMF_MEMORY_UNKNOWN;
 
-    int64_t                                             m_MaxConcurrentConnections = 1;
-    int64_t                                             m_CurConnectionsCnt = 0;
+    size_t                                             m_MaxConcurrentConnections = 1;
+    
+    SessionClientBinding::Set                           m_ActiveSessions;
 
     amf::AMFCurrentTimePtr                              m_CurrentTime;
 

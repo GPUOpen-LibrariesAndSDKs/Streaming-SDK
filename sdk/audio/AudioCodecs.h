@@ -46,6 +46,7 @@ namespace ssdk::audio
 
     constexpr const int CODEC_AAC_FFMPEG_ID = 86018;
     constexpr const int CODEC_OPUS_FFMPEG_ID = 86076;
+    constexpr const int CODEC_PCM_FFMPEG_ID = 3000;
 
     constexpr const wchar_t* const AUDIO_DISCONTINUITY = L"ssdk::audio::AUDIO_DISCONTINUITY";    //  bool: property set on the first buffer after a PTS discontinuity
 

@@ -79,7 +79,7 @@ namespace ssdk::audio
         virtual const char* GetCodecName() const noexcept = 0;
         virtual const char* GetCodecID() const noexcept = 0;
 
-        inline amf::AMF_AUDIO_FORMAT GetFormat() const noexcept { return m_Format; }
+        virtual amf::AMF_AUDIO_FORMAT GetFormat() const noexcept { return m_Format; }
         inline int32_t GetChannels() const noexcept { return m_Channels; }
         inline int32_t GetLayout() const noexcept { return m_Layout; }
         inline int32_t GetSamplingRate() const noexcept { return m_SamplingRate; }

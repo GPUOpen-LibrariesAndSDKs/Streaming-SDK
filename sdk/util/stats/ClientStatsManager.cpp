@@ -79,7 +79,6 @@ namespace ssdk::util
         amf::AMFLock lock(&m_Guard);
         amf_pts now = amf_high_precision_clock();;
         m_DecoderQueueTimes[pts] = now;
-        ++m_DecoderQueueDepth;
     };
 
     void ClientStatsManager::DecrementDecoderQueueDepth(amf_pts pts)
@@ -92,9 +91,9 @@ namespace ssdk::util
         {
             amf_pts ptsStart = element->second;
             m_DecoderLatencyHistory.Add((float)(ptsEnd - ptsStart) / AMF_MILLISECOND);
-            m_DecoderQueueTimes.erase(element);
+            m_DecoderQueueTimes.erase(m_DecoderQueueTimes.begin(), element);
         }
-        if (--m_DecoderQueueDepth > 0)
+        if (m_DecoderQueueTimes.size() > 0)
         {
             SendStatistics();
         }
@@ -104,6 +103,7 @@ namespace ssdk::util
     void ClientStatsManager::UpdateFullLatencyAndFramerate(amf_pts fullLatencyPts)
     {
         amf_pts now = amf_high_precision_clock();
+        amf::AMFLock lock(&m_Guard);
         float frameDuration = (float)(now - m_LastFrameTime) / AMF_SECOND;
         m_LastFrameTime = now;
         m_FrameDurationHistory.Add(frameDuration);
@@ -114,28 +114,33 @@ namespace ssdk::util
     void ClientStatsManager::UpdateClientLatency(amf_pts clientLatencyPts)
     {
         float clientLatency = (float)(clientLatencyPts) / AMF_MILLISECOND;
+        amf::AMFLock lock(&m_Guard);
         m_ClientLatencyHistory.Add(clientLatency);
     }
 
     void ClientStatsManager::UpdateServerLatency(amf_pts serverLatencyPts)
     {
         float serverLatency = (float)(serverLatencyPts) / AMF_MILLISECOND;
+        amf::AMFLock lock(&m_Guard);
         m_ServerLatencyHistory.Add(serverLatency);
     }
 
     void ClientStatsManager::UpdateEncoderLatency(amf_pts encoderLatencyPts)
     {
         float encoderLatency = (float)(encoderLatencyPts) / AMF_MILLISECOND;
+        amf::AMFLock lock(&m_Guard);
         m_EncoderLatencyHistory.Add(encoderLatency);
     }
 
     void ClientStatsManager::UpdateAudioStatistics(amf_pts AVDesync)
     {
+        amf::AMFLock lock(&m_Guard);
         m_AVDesyncHistory.Add((float)(AVDesync) / AMF_MILLISECOND );
     }
 
     void ClientStatsManager::UpdateDecryptStatistics(amf_pts decrypt)
     {
+        amf::AMFLock lock(&m_Guard);
         m_DecryptHistory.Add((float)(decrypt) / AMF_MILLISECOND );
     }
 
@@ -168,7 +173,7 @@ namespace ssdk::util
                 networkLatency = fullLatency - clientLatency - serverLatency;
                 decoderLatency = m_DecoderLatencyHistory.GetAverageAndClear();
                 decrypt = m_DecryptHistory.GetAverageAndClear();
-                decoderQueueSize = m_DecoderQueueDepth;
+                decoderQueueSize = int32_t(m_DecoderQueueTimes.size());
                 AVDesync = m_AVDesyncHistory.GetAverageAndClear();
                 frameDurationAvg = m_FrameDurationHistory.GetAverageAndClear();
                 framerate = 0;

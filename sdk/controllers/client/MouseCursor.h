@@ -45,10 +45,10 @@ namespace ssdk::ctls
     public:
         typedef std::shared_ptr<MouseCursor> Ptr;
     public:
-        MouseCursor(bool bShowCursor, bool bFullScreen, amf_handle hWindow);
-        ~MouseCursor() {}
+        MouseCursor() = default;
+        virtual ~MouseCursor() = default;
 
-        virtual void Present() = 0;
+        virtual void Present() {}
         virtual bool ProcessMessage(const WindowMessage& /*msg*/) { return false; }
 
         // CursorCallback interface
@@ -58,10 +58,6 @@ namespace ssdk::ctls
     protected:
         std::unique_ptr<transport_common::Cursor> m_pCursor;
         amf::AMFCriticalSection m_cs;
-        amf_handle              m_hWindow;
-        bool                    m_bFirstRun;
-        bool                    m_bShowCursor;
-        bool                    m_bFullScreen;
     };
 
     //----------------------------------------------------------------------------------------------

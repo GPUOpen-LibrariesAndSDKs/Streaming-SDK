@@ -34,6 +34,8 @@
 
 #if defined(_WIN32)
 #include "win/GameControllerWin.h"
+#elif defined(__ANDROID__)
+#include "android/GameControllerAndroid.h"
 #else
 #include "lnx/GameControllerLnx.h"
 #endif
